@@ -30,8 +30,21 @@ jobs:
           npm run check
           npm test
 
-      # GitHub Pages serves the static frontend only. The browser calls NEIS
-      # directly with a key the visitor stores in their own browser.
+      # GitHub Pages serves the static frontend only, so the browser calls NEIS
+      # directly. The shared key comes from the NEIS_API_KEY repository secret and
+      # is written into public/config.js at deploy time (never committed).
+      - name: Inject shared NEIS key
+        env:
+          NEIS_API_KEY: ${{ secrets.NEIS_API_KEY }}
+        run: |
+          node -e "
+            const key = (process.env.NEIS_API_KEY || '').trim();
+            if (!/^[A-Za-z0-9]*$/.test(key)) throw new Error('NEIS_API_KEY has unexpected characters');
+            require('fs').writeFileSync('public/config.js', 'export const config={key:' + JSON.stringify(key) + '};\n');
+            console.log(key ? 'shared key injected' : 'no NEIS_API_KEY secret; visitors must enter their own key');
+          "
+          node --check public/config.js
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

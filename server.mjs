@@ -5,7 +5,7 @@ const endpoints = { schoolInfo: ['ATPT_OFCDC_SC_CODE'], SchoolSchedule: ['ATPT_O
 const allowed = new Set(['ATPT_OFCDC_SC_CODE','SD_SCHUL_CODE','AA_FROM_YMD','AA_TO_YMD','TI_FROM_YMD','TI_TO_YMD']);
 export {fetchRows} from './public/neis.mjs';
 import {fetchRows} from './public/neis.mjs';
-const staticFiles={'/':'index.html','/app.js':'app.js','/neis.mjs':'neis.mjs','/style.css':'style.css','/favicon.svg':'favicon.svg'};
+const staticFiles={'/':'index.html','/app.js':'app.js','/neis.mjs':'neis.mjs','/config.js':'config.js','/style.css':'style.css','/favicon.svg':'favicon.svg'};
 const server=http.createServer(async(req,res)=>{
  const send=(status,data)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(data));};
  try {

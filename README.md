@@ -64,7 +64,7 @@ npm test
 | 모드 | 환경 | 인증키 위치 |
 | --- | --- | --- |
 | 서버 모드 | `npm start` 로컬 서버, Cloudflare Workers 배포 | 서버 환경변수 `NEIS_API_KEY` |
-| 직접 조회 모드 | GitHub Pages 등 정적 호스팅 (`api/status`가 없음) | 사용자 브라우저의 localStorage |
+| 직접 조회 모드 | GitHub Pages 등 정적 호스팅 (`api/status`가 없음) | 배포 시 주입하는 공용 키(`public/config.js`), 또는 사용자가 입력한 개인 키(localStorage) |
 
 직접 조회 모드에서는 브라우저가 NEIS 개방 포털을 직접 호출합니다. NEIS는 `Access-Control-Allow-Origin: *`를 반환하므로 별도 프록시 없이 동작합니다. 인증키 없이 호출하면 NEIS가 샘플 5건만 돌려주므로 실제 조회에는 인증키가 필요합니다.
 
@@ -74,8 +74,16 @@ npm test
 
 `main` 브랜치에 push하면 `.github/workflows/deploy.yml`이 검사·테스트를 거쳐 `public/` 폴더를 GitHub Pages에 배포합니다. 저장소 설정의 Pages 항목에서 Source가 **GitHub Actions**여야 합니다.
 
-- 접속하면 데모가 표시되고 인증키 입력창이 열립니다. 사이드바의 **인증키 설정**에서 언제든 다시 열 수 있습니다.
-- 각 사용자가 자기 인증키를 발급받아 입력하며, 인증키는 그 브라우저의 localStorage에만 저장되고 `open.neis.go.kr`로만 전송됩니다. 저장소나 배포 산출물에는 인증키가 들어가지 않습니다.
+- 저장소 Secrets의 `NEIS_API_KEY`를 배포 워크플로가 `public/config.js`에 공용 인증키로 넣습니다. 접속하면 이 키로 바로 조회합니다. 저장소에 커밋된 `config.js`는 빈 키이며 배포 시 덮어씁니다.
+- 공용 인증키는 페이지 소스에서 누구나 볼 수 있습니다. 한도가 소진되거나 키를 바꾸려면 Secret을 갱신하고 워크플로를 다시 실행하세요.
+
+  ```sh
+  gh secret set NEIS_API_KEY --repo ngryun/school-dashboard
+  gh workflow run deploy.yml --repo ngryun/school-dashboard
+  ```
+
+- Secret이 없으면 접속자가 자기 인증키를 입력해야 하며 그 전까지 데모가 표시됩니다.
+- 사이드바의 **인증키 설정**에서 개인 인증키를 입력하면 공용 키보다 우선 사용합니다. 개인 키는 그 브라우저의 localStorage에만 저장되고 `open.neis.go.kr`로만 전송됩니다.
 - 공용 컴퓨터에서는 사용 후 **삭제** 버튼으로 인증키를 지우세요.
 - 페이지가 `/school-dashboard/` 하위 경로에서 열리므로 HTML의 자원 경로는 모두 상대 경로입니다.
 
@@ -87,4 +95,4 @@ npm test
 
 ## 운영 범위
 
-로컬 서버는 `127.0.0.1`에 바인딩되는 이 컴퓨터 전용 웹앱입니다. GitHub Pages 버전은 정적 파일만 제공하므로 요청 제한과 캐시가 없고, 조회량은 각 사용자의 NEIS 인증키 한도를 따릅니다. 공용 프록시 서버로 운영하려면 Workers 배포 버전에 요청 제한·캐시와 인증키 관리 방식을 적용하세요.
+로컬 서버는 `127.0.0.1`에 바인딩되는 이 컴퓨터 전용 웹앱입니다. GitHub Pages 버전은 정적 파일만 제공하므로 요청 제한과 캐시가 없고, 조회량은 공용 인증키(또는 입력한 개인 인증키)의 NEIS 한도를 따릅니다. 공용 프록시 서버로 운영하려면 Workers 배포 버전에 요청 제한·캐시와 인증키 관리 방식을 적용하세요.

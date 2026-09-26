@@ -1,4 +1,5 @@
 import { fetchRows } from './neis.mjs';
+import { config } from './config.js';
 const $=s=>document.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const offices={B10:'서울특별시교육청',C10:'부산광역시교육청',D10:'대구광역시교육청',E10:'인천광역시교육청',F10:'광주광역시교육청',G10:'대전광역시교육청',H10:'울산광역시교육청',I10:'세종특별자치시교육청',J10:'경기도교육청',K10:'강원특별자치도교육청',M10:'충청북도교육청',N10:'충청남도교육청',P10:'전북특별자치도교육청',Q10:'전라남도교육청',R10:'경상북도교육청',S10:'경상남도교육청',T10:'제주특별자치도교육청'};
@@ -8,7 +9,8 @@ const gangwonDistricts=['춘천시','원주시','강릉시','동해시','태백�
 const districtOf=s=>{const parts=(s.ORG_RDNMA||'').trim().split(/\s+/);return s.ATPT_OFCDC_SC_CODE==='I10'?'세종시':parts[1]||'지역 미분류';};
 let scheduleController=null;
 let mode='server';
-const direct={key:''};
+const direct={key:'',shared:String(config?.key||'')};
+const activeKey=()=>direct.key||direct.shared;
 try{direct.key=localStorage.getItem('neisKey')||'';}catch{}
 const eventCache=new Map();
 const now=new Date();
@@ -68,9 +70,9 @@ function safeUrl(value){try{const u=new URL(/^https?:\/\//i.test(value)?value:'h
 function schoolDetail(code){const s=state.schools.find(s=>s.SD_SCHUL_CODE===code);if(!s)return;const homepage=s.HMPG_ADRES?safeUrl(s.HMPG_ADRES):'';showDetail(`<p class="eyebrow">SCHOOL PROFILE ${state.demo?'· DEMO':''}</p><h2>${esc(s.SCHUL_NM)}</h2><span class="badge ${color(s.SCHUL_KND_SC_NM)}">${esc(s.SCHUL_KND_SC_NM)}</span> ${homepage?`<a class="button compact" target="_blank" rel="noreferrer" href="${esc(homepage)}">학교 홈페이지 ↗</a>`:''}<dl class="details">${Object.entries(fields).map(([key,label])=>`<div class="field"><dt>${label}</dt><dd>${esc(key.endsWith('YMD')||key==='FOAS_MEMRD'?pretty(s[key]):s[key]||'—')}</dd></div>`).join('')}</dl><section class="dialog-section"><h2>이번 달 학사일정</h2>${eventTable(state.events.filter(e=>e.SD_SCHUL_CODE===code))}</section>${s.SCHUL_KND_SC_NM==='특수학교'?`<section class="dialog-section"><h2>특수학교 시간표</h2><p>학사행사와 별도로 과정·학년·학급·교시별 수업을 조회합니다.</p><label>조회 날짜 <input id="timetable-date" type="date" value="${state.month.getFullYear()}-${String(state.month.getMonth()+1).padStart(2,'0')}-01"></label> <button class="button" id="timetable-load" data-code="${esc(code)}">시간표 조회</button><div id="timetable-result" role="status"></div></section>`:''}`);}
 async function api(endpoint,params,signal){
  if(mode==='direct'){
-  if(!direct.key)throw new Error('NEIS 인증키를 입력해 주세요.');
+  const key=activeKey();if(!key)throw new Error('NEIS 인증키를 입력해 주세요.');
   const fetcher=(url,init={})=>fetch(url,{...init,signal:signal&&typeof AbortSignal.any==='function'?AbortSignal.any([signal,init.signal].filter(Boolean)):init.signal});
-  return fetchRows(endpoint,params,direct.key,fetcher);
+  return fetchRows(endpoint,params,key,fetcher);
  }
  const r=await fetch('api/'+endpoint+'?'+new URLSearchParams(params),{signal});const data=await r.json();if(!r.ok)throw new Error(data.error||'조회에 실패했습니다.');return data.rows;
 }
@@ -131,12 +133,12 @@ document.addEventListener('click',async e=>{
 });
 state.demo=false;render();notice('NEIS 연결을 확인하고 있습니다.');
 function restoreScope(){try{state.loadedOffice=$('#office').value;state.loadedDistrict=localStorage.getItem('district')||'';}catch{}}
-function keyStatus(){$('#config-status').textContent=direct.key?'이 브라우저에 저장된 인증키로 NEIS에서 직접 조회합니다.':'인증키를 입력하면 실제 학교 정보와 학사일정을 조회합니다. 인증키가 없으면 데모를 둘러볼 수 있습니다.';}
+function keyStatus(){$('#config-status').textContent=direct.key?'이 브라우저에 저장된 개인 인증키로 NEIS에서 직접 조회합니다.':direct.shared?'공용 인증키로 NEIS에서 직접 조회합니다. 개인 인증키를 입력하면 그 키를 우선 사용합니다.':'인증키를 입력하면 실제 학교 정보와 학사일정을 조회합니다. 인증키가 없으면 데모를 둘러볼 수 있습니다.';}
 async function serverStatus(){try{const r=await fetch('api/status',{cache:'no-store'});if(!r.ok||!(r.headers.get('content-type')||'').includes('json'))return null;return await r.json();}catch{return null;}}
 $('#key-form').onsubmit=e=>{e.preventDefault();const key=$('#api-key').value.trim();if(!key)return;direct.key=key;try{localStorage.setItem('neisKey',key);}catch{}keyStatus();$('#config').close();restoreScope();loadSchools();};
-$('#key-clear').onclick=()=>{direct.key='';$('#api-key').value='';try{localStorage.removeItem('neisKey');}catch{}keyStatus();if(!state.busy)startDemo();};
+$('#key-clear').onclick=()=>{direct.key='';$('#api-key').value='';try{localStorage.removeItem('neisKey');}catch{}keyStatus();if(!state.busy){if(activeKey())loadSchools();else startDemo();}};
 serverStatus().then(data=>{
  if(data){$('#config-status').textContent=data.configured?'인증키가 설정되어 있습니다. 교육청과 지역을 선택해 조회하세요.':'현재 인증키가 설정되어 있지 않습니다.';if(data.configured){restoreScope();loadSchools();}else startDemo();return;}
  mode='direct';$('#key-form').hidden=false;$('#settings').querySelector('span').textContent='인증키 설정';$('#api-key').value=direct.key;keyStatus();
- if(direct.key){restoreScope();loadSchools();}else{startDemo();$('#config').showModal();}
+ if(activeKey()){restoreScope();loadSchools();}else{startDemo();$('#config').showModal();}
 });
