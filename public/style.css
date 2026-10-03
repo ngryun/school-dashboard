@@ -9,7 +9,7 @@
   --sun:#c2504b;--sat:#3a6fc2;
   --el:#2b8a63;--el-ink:#1e6a4c;--el-soft:#e4f4ec;
   --mi:#3b78c2;--mi-ink:#2b5ea0;--mi-soft:#e8f0fb;
-  --hi:#7a5cc7;--hi-ink:#5c42a5;--hi-soft:#efeafa;
+  --hi:#c2508a;--hi-ink:#9b3d6c;--hi-soft:#fbe9f2;
   --sp:#c07a1f;--sp-ink:#8f5a10;--sp-soft:#fbf0de;
   --danger:#b4413b;--warn-ink:#8a5a12;--warn-soft:#fff3db;
   --r-m:12px;--r-l:16px;
@@ -328,3 +328,50 @@ dialog::backdrop{-webkit-backdrop-filter:blur(4px)}
 .facts b{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
 .facts small{color:var(--muted);margin-left:3px}
 #alrimi-status{font-size:13.5px;color:var(--muted)}
+
+/* ===== 한눈에 보기: 차트 카드 ===== */
+.overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:0 0 22px}
+.overview:empty{display:none}
+.chart-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);box-shadow:var(--shadow-s);padding:18px 20px 16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.chart-card header{display:flex;align-items:baseline;justify-content:space-between;gap:10px;height:auto;padding:0;border:0;background:none}
+.chart-card h3{margin:0;font-size:15px;font-weight:700;letter-spacing:-.3px;color:var(--ink)}
+.chart-card header span{font-size:12px;color:var(--faint);white-space:nowrap}
+.chart-card footer{margin:0;font-size:12.5px;color:var(--muted);display:block;line-height:1.6}
+.chart-card footer b{color:var(--ink-2);font-weight:650}
+/* donut */
+.donut{display:flex;align-items:center;gap:18px;min-width:0}
+.donut svg{flex:none}
+.donut-seg{fill:none;stroke-linecap:butt;transition:stroke-width .15s,opacity .15s;cursor:default;outline:none}
+.donut:hover .donut-seg{opacity:.55}
+.donut .donut-seg:hover,.donut .donut-seg:focus-visible{opacity:1;stroke-width:22}
+.donut-track{fill:none;stroke:var(--line)}
+.donut-value{font-size:26px;font-weight:750;fill:var(--ink);letter-spacing:-.8px}
+.donut-sub{font-size:11px;font-weight:600;fill:var(--muted);letter-spacing:.3px}
+.donut-seg.elementary{stroke:var(--el)}.donut-seg.middle{stroke:var(--mi)}.donut-seg.high{stroke:var(--hi)}.donut-seg.special{stroke:var(--sp)}
+.donut-seg.accent{stroke:var(--accent)}.donut-seg.accent-2{stroke:#7cc8b2}.donut-seg.accent-3{stroke:#c9e5d9}.donut-seg.neutral{stroke:#b8c4cf}
+.legend-list{list-style:none;margin:0;padding:0;display:grid;gap:7px;flex:1;min-width:0}
+.legend-list li{display:grid;grid-template-columns:10px 1fr auto auto;align-items:center;gap:8px;font-size:13px;color:var(--ink-2)}
+.legend-list li.is-zero{opacity:.45}
+.legend-list b{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+.legend-list small{font-size:11.5px;color:var(--faint);min-width:40px;text-align:right;font-variant-numeric:tabular-nums}
+.lg-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.swatch{width:10px;height:10px;border-radius:3px;display:inline-block;background:var(--line-2)}
+.swatch.elementary{background:var(--el)}.swatch.middle{background:var(--mi)}.swatch.high{background:var(--hi)}.swatch.special{background:var(--sp)}
+.swatch.accent{background:var(--accent)}.swatch.accent-2{background:#7cc8b2}.swatch.accent-3{background:#c9e5d9}.swatch.neutral{background:#b8c4cf}
+/* horizontal bars */
+.bars{display:grid;gap:9px}
+.bar-row{display:grid;grid-template-columns:minmax(72px,34%) 1fr auto;align-items:center;gap:10px;font-size:13px;color:var(--ink-2)}
+.bar-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-track{display:block;width:100%;height:10px}
+.bar-bg{fill:var(--surface-2)}
+.bar-fill{fill:var(--accent);transition:width .35s ease}
+.bar-fill.elementary{fill:var(--el)}.bar-fill.middle{fill:var(--mi)}.bar-fill.high{fill:var(--hi)}.bar-fill.special{fill:var(--sp)}
+.bar-fill.neutral{fill:#b8c4cf}
+.bar-row:hover .bar-fill{filter:brightness(.92)}
+.bar-value{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;min-width:38px;text-align:right}
+.bar-value small{font-weight:500;color:var(--faint);margin-left:2px}
+.chart-empty{display:grid;place-items:center;text-align:center;color:var(--muted);font-size:13px;padding:22px 8px;gap:8px;min-height:120px}
+.chart-empty .i{width:28px;height:28px;color:var(--line-2);stroke-width:1.5}
+.chart-empty p{margin:0}
+@media(max-width:1199px){.overview{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.overview{grid-template-columns:1fr;gap:10px;margin-bottom:16px}.chart-card{padding:14px 14px 12px}.donut{gap:14px}.donut svg{width:124px;height:124px}}
