@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "start": "node --env-file-if-exists=.env server.mjs",
-    "check": "node --check server.mjs && node --check public/app.js && node --check worker.mjs",
+    "check": "node --check server.mjs && node --check public/app.js && node --check worker.mjs && node --check alrimi.mjs",
     "test": "node --test",
-    "build": "node build.mjs"
+    "build": "node build.mjs",
+    "deploy:worker": "npm run build && npx wrangler deploy"
   },
   "engines": {
     "node": ">=22"

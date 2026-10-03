@@ -32,16 +32,21 @@ jobs:
 
       # GitHub Pages serves the static frontend only, so the browser calls NEIS
       # directly. The shared key comes from the NEIS_API_KEY repository secret and
-      # is written into public/config.js at deploy time (never committed).
-      - name: Inject shared NEIS key
+      # the 학교알리미 relay (Cloudflare Worker) URL from the API_BASE repository
+      # variable; both are written into public/config.js at deploy time.
+      - name: Inject runtime config
         env:
           NEIS_API_KEY: ${{ secrets.NEIS_API_KEY }}
+          API_BASE: ${{ vars.API_BASE }}
         run: |
           node -e "
             const key = (process.env.NEIS_API_KEY || '').trim();
+            const apiBase = (process.env.API_BASE || '').trim().replace(/\/+$/, '');
             if (!/^[A-Za-z0-9]*$/.test(key)) throw new Error('NEIS_API_KEY has unexpected characters');
-            require('fs').writeFileSync('public/config.js', 'export const config={key:' + JSON.stringify(key) + '};\n');
-            console.log(key ? 'shared key injected' : 'no NEIS_API_KEY secret; visitors must enter their own key');
+            if (apiBase && !/^https:\/\/[A-Za-z0-9.-]+(\/[A-Za-z0-9._~-]*)*$/.test(apiBase)) throw new Error('API_BASE must be an https URL');
+            require('fs').writeFileSync('public/config.js', 'export const config=' + JSON.stringify({ key, apiBase }) + ';\n');
+            console.log(key ? 'shared NEIS key injected' : 'no NEIS_API_KEY secret; visitors must enter their own key');
+            console.log(apiBase ? '학교알리미 relay: ' + apiBase : 'no API_BASE variable; student/teacher counts disabled');
           "
           node --check public/config.js
 

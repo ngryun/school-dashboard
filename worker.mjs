@@ -1,11 +1,29 @@
 import { fetchRows } from './public/neis.mjs';
+import { fetchAlrimi, validateAlrimi } from './alrimi.mjs';
 const endpoints={schoolInfo:['ATPT_OFCDC_SC_CODE'],SchoolSchedule:['ATPT_OFCDC_SC_CODE','SD_SCHUL_CODE','AA_FROM_YMD','AA_TO_YMD'],spsTimetable:['ATPT_OFCDC_SC_CODE','SD_SCHUL_CODE','TI_FROM_YMD','TI_TO_YMD'],classInfo:['ATPT_OFCDC_SC_CODE','SD_SCHUL_CODE','AY']};
 const json=(status,data)=>new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}});
+const corsHeaders=(request,env)=>{const origin=request.headers.get('origin')||'';const allowed=String(env.ALLOWED_ORIGINS||'').split(',').map(s=>s.trim()).filter(Boolean);return origin&&allowed.includes(origin)?{'access-control-allow-origin':origin,'vary':'origin'}:{};};
+const withHeaders=(response,headers)=>{const r=new Response(response.body,response);for(const [k,v] of Object.entries(headers))r.headers.set(k,v);return r;};
+async function alrimi(env,ctx,url,cors){
+ const apiType=url.pathname.slice(12),params={sido:url.searchParams.get('sido')||'',sgg:url.searchParams.get('sgg')||'',kind:url.searchParams.get('kind')||'',year:url.searchParams.get('year')||''};
+ const invalid=validateAlrimi(apiType,params);if(invalid)return withHeaders(json(400,{error:invalid}),cors);
+ if(!env.ALRIMI_API_KEY)return withHeaders(json(503,{error:'학교알리미 인증키가 설정되지 않았습니다. 관리자에게 문의해 주세요.'}),cors);
+ const cacheUrl=new URL(url.origin+'/api/alrimi/'+apiType);for(const k of ['sido','sgg','kind','year'])if(params[k])cacheUrl.searchParams.set(k,params[k]);
+ const cache=globalThis.caches?.default,cacheKey=new Request(cacheUrl);
+ const cached=cache?await cache.match(cacheKey):null;if(cached)return withHeaders(cached,cors);
+ try{
+  const response=json(200,await fetchAlrimi(apiType,params,env.ALRIMI_API_KEY));response.headers.set('cache-control','public, max-age=86400');
+  if(cache)ctx.waitUntil(cache.put(cacheKey,response.clone()));return withHeaders(response,cors);
+ }catch(error){return withHeaders(json(error.code==='AUTH'?503:502,{error:error.name==='TimeoutError'?'학교알리미 응답 시간이 초과되었습니다. 다시 시도해 주세요.':error.message}),cors);}
+}
 export default {
  async fetch(request,env,ctx){
-  const url=new URL(request.url);
+  const url=new URL(request.url),cors=corsHeaders(request,env);
+  if(request.method==='OPTIONS')return new Response(null,{status:204,headers:{...cors,'access-control-allow-methods':'GET, HEAD, OPTIONS','access-control-max-age':'86400'}});
   if(request.method!=='GET'&&request.method!=='HEAD')return json(405,{error:'지원하지 않는 요청입니다.'});
   if(url.pathname==='/api/status')return json(200,{configured:!!env.NEIS_API_KEY});
+  if(url.pathname==='/api/alrimi/status')return withHeaders(json(200,{configured:!!env.ALRIMI_API_KEY}),cors);
+  if(url.pathname.startsWith('/api/alrimi/'))return alrimi(env,ctx,url,cors);
   if(url.pathname.startsWith('/api/')){
    const endpoint=url.pathname.slice(5),required=endpoints[endpoint];
    if(!required)return json(404,{error:'지원하지 않는 요청입니다.'});

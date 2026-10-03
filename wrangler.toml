@@ -1,0 +1,13 @@
+# Cloudflare Workers 배포 설정. `npm run deploy:worker`로 빌드 후 배포한다.
+# 비밀값: npx wrangler secret put NEIS_API_KEY / npx wrangler secret put ALRIMI_API_KEY
+name = "school-dashboard"
+main = "dist/server/index.js"
+compatibility_date = "2026-09-01"
+workers_dev = true
+
+[build]
+command = "npm run build"
+
+[vars]
+# 학교알리미 중계 API를 호출할 수 있는 브라우저 출처(쉼표 구분). GitHub Pages 주소를 넣는다.
+ALLOWED_ORIGINS = "https://ngryun.github.io"

@@ -319,3 +319,12 @@ dialog::backdrop{-webkit-backdrop-filter:blur(4px)}
 @media(max-width:760px){.calendar-prompt{padding:12px}.calendar-prompt>div{padding:20px 16px}.today-label{display:none}}
 .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .dialog-section h2 small{font-size:13px;font-weight:500;color:var(--muted);margin-left:8px;letter-spacing:0}
+/* six stat tiles + disclosure facts */
+.stat-label small{display:block;font-size:11px;color:var(--faint);margin-top:2px;font-weight:500}
+@media(min-width:1200px){.stats{grid-template-columns:repeat(6,1fr)}.stat{padding:16px 18px}}
+@media(min-width:1200px) and (max-width:1480px){.stat-icon{display:none}}
+@media(min-width:761px) and (max-width:1199px){.stats{grid-template-columns:repeat(3,1fr)}}
+.facts{display:flex;flex-wrap:wrap;gap:8px 20px;margin:6px 0 14px;font-size:14px;color:var(--ink-2)}
+.facts b{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+.facts small{color:var(--muted);margin-left:3px}
+#alrimi-status{font-size:13.5px;color:var(--muted)}

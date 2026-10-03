@@ -11,3 +11,20 @@ test('공개 일정이 없는 경우 빈 결과를 반환한다',async()=>assert
 test('인증 오류를 일정 없음으로 처리하지 않는다',async()=>assert.rejects(()=>fetchRows('SchoolSchedule',{},'key',async()=>response({RESULT:{CODE:'ERROR-290'}})),/ERROR-290/));
 test('잘못된 응답을 거부한다',async()=>assert.rejects(()=>fetchRows('spsTimetable',{},'key',async()=>response({unknown:[]})),/응답 형식/));
 test('NEIS 서버 오류를 전달한다',async()=>assert.rejects(()=>fetchRows('schoolInfo',{},'key',async()=>({ok:false})),/연결할 수 없습니다/));
+import { fetchAlrimi, validateAlrimi } from './server.mjs';
+test('학교알리미 응답을 정규화하고 인증키는 학교알리미에만 전달한다',async()=>{
+ const urls=[];
+ const r=await fetchAlrimi('09',{sido:'51',sgg:'51820',kind:'02',year:'2026'},'alrimi-key',async u=>{urls.push(u);return response({resultCode:'success',resultMsg:'',list:[{SCHUL_NM:'간성초등학교',COL_S_SUM:'1,234'}]});});
+ assert.equal(r.rows.length,1);assert.equal(urls[0].hostname,'www.schoolinfo.go.kr');assert.equal(urls[0].searchParams.get('apiKey'),'alrimi-key');assert.equal(urls[0].searchParams.get('pbanYr'),'2026');assert.equal(urls[0].searchParams.get('sggCode'),'51820');
+});
+test('학교알리미 인증 오류와 자료 없음을 구분한다',async()=>{
+ await assert.rejects(()=>fetchAlrimi('09',{sido:'51',kind:'02'},'bad',async()=>response({resultCode:'fail',resultMsg:'유효하지 않은 apiKey입니다.'})),/인증키/);
+ const r=await fetchAlrimi('09',{sido:'51',kind:'02'},'k',async()=>response({resultCode:'fail',resultMsg:'데이터가 없습니다.'}));
+ assert.deepEqual(r.rows,[]);assert.match(r.message,/데이터/);
+});
+test('학교알리미 요청 인자를 검증한다',()=>{
+ assert.equal(validateAlrimi('09',{sido:'51',sgg:'51820',kind:'02',year:'2026'}),null);
+ assert.match(validateAlrimi('99',{sido:'51',kind:'02'}),/항목/);
+ assert.match(validateAlrimi('09',{sido:'5',kind:'02'}),/시도/);
+ assert.match(validateAlrimi('09',{sido:'51',kind:'1'}),/학교급/);
+});
