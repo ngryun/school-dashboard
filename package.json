@@ -8,7 +8,7 @@
     "check": "node --check server.mjs && node --check public/app.js && node --check worker.mjs && node --check alrimi.mjs",
     "test": "node --test",
     "build": "node build.mjs",
-    "deploy:worker": "npm run build && npx wrangler deploy"
+    "deploy:worker": "npx wrangler deploy"
   },
   "engines": {
     "node": ">=22"

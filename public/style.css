@@ -321,9 +321,6 @@ dialog::backdrop{-webkit-backdrop-filter:blur(4px)}
 .dialog-section h2 small{font-size:13px;font-weight:500;color:var(--muted);margin-left:8px;letter-spacing:0}
 /* six stat tiles + disclosure facts */
 .stat-label small{display:block;font-size:11px;color:var(--faint);margin-top:2px;font-weight:500}
-@media(min-width:1200px){.stats{grid-template-columns:repeat(6,1fr)}.stat{padding:16px 18px}}
-@media(min-width:1200px) and (max-width:1480px){.stat-icon{display:none}}
-@media(min-width:761px) and (max-width:1199px){.stats{grid-template-columns:repeat(3,1fr)}}
 .facts{display:flex;flex-wrap:wrap;gap:8px 20px;margin:6px 0 14px;font-size:14px;color:var(--ink-2)}
 .facts b{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
 .facts small{color:var(--muted);margin-left:3px}
@@ -375,3 +372,19 @@ dialog::backdrop{-webkit-backdrop-filter:blur(4px)}
 .chart-empty p{margin:0}
 @media(max-width:1199px){.overview{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.overview{grid-template-columns:1fr;gap:10px;margin-bottom:16px}.chart-card{padding:14px 14px 12px}.donut{gap:14px}.donut svg{width:124px;height:124px}}
+/* overview refinements */
+.chart-card.wide{grid-column:1/-1}
+.bars.cols-2{grid-template-columns:1fr 1fr;column-gap:28px}
+.bar-axis{stroke:var(--line-2);stroke-width:1}
+.bar-row.is-muted{color:var(--muted)}.bar-row.is-muted .bar-value{color:var(--muted);font-weight:600}
+.strip{margin-top:2px}.strip svg{display:block;border-radius:3px;background:var(--surface-2)}
+.strip-seg.accent{fill:var(--accent)}.strip-seg.accent-2{fill:#7cc8b2}.strip-seg.neutral{fill:#b8c4cf}
+.strip-legend{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--muted)}
+.strip-legend li{display:inline-flex;align-items:center;gap:6px}.strip-legend b{color:var(--ink-2);font-weight:650}
+.daystrip{margin-top:4px;padding-top:12px;border-top:1px solid var(--line)}
+.daystrip svg{display:block}
+.day-col{fill:var(--accent);opacity:.8}.day-col.weekend{fill:#b8c4cf}.day-col.is-max{opacity:1;fill:var(--accent-2)}
+.daystrip-axis{display:flex;justify-content:space-between;font-size:11px;color:var(--faint);margin-top:4px}
+.chart-card footer .swatch{vertical-align:-1px;margin:0 2px 0 8px}
+.error-text{color:var(--danger)}.facts .muted{color:var(--muted)}
+@media(max-width:760px){.bars.cols-2{grid-template-columns:1fr}}

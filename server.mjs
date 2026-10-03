@@ -4,8 +4,9 @@ import { readFile } from 'node:fs/promises';
 const endpoints = { schoolInfo: ['ATPT_OFCDC_SC_CODE'], SchoolSchedule: ['ATPT_OFCDC_SC_CODE','SD_SCHUL_CODE','AA_FROM_YMD','AA_TO_YMD'], spsTimetable: ['ATPT_OFCDC_SC_CODE','SD_SCHUL_CODE','TI_FROM_YMD','TI_TO_YMD'], classInfo: ['ATPT_OFCDC_SC_CODE','SD_SCHUL_CODE','AY'] };
 export {fetchRows} from './public/neis.mjs';
 import {fetchRows} from './public/neis.mjs';
-export {fetchAlrimi, validateAlrimi} from './alrimi.mjs';
-import {fetchAlrimi, validateAlrimi} from './alrimi.mjs';
+export {fetchAlrimi, validateAlrimi, regionCodes} from './alrimi.mjs';
+import {fetchAlrimi, validateAlrimi, regionCodes, alrimiErrorResponse} from './alrimi.mjs';
+const knownCodes=regionCodes(JSON.parse(await readFile(new URL('public/regions.json',import.meta.url),'utf8')));
 const staticFiles={'/':'index.html','/app.js':'app.js','/neis.mjs':'neis.mjs','/config.js':'config.js','/style.css':'style.css','/favicon.svg':'favicon.svg','/regions.json':'regions.json'};
 const server=http.createServer(async(req,res)=>{
  const send=(status,data)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(data));};
@@ -14,11 +15,12 @@ const server=http.createServer(async(req,res)=>{
   if(url.pathname==='/api/status') return send(200,{configured:!!process.env.NEIS_API_KEY});
   if(url.pathname==='/api/alrimi/status') return send(200,{configured:!!process.env.ALRIMI_API_KEY});
   if(url.pathname.startsWith('/api/alrimi/')) {
+   if(req.method!=='GET') return send(405,{error:'지원하지 않는 요청입니다.'});
    const apiType=url.pathname.slice(12),params={sido:url.searchParams.get('sido')||'',sgg:url.searchParams.get('sgg')||'',kind:url.searchParams.get('kind')||'',year:url.searchParams.get('year')||''};
-   const invalid=validateAlrimi(apiType,params); if(invalid) return send(400,{error:invalid});
+   const invalid=validateAlrimi(apiType,params,knownCodes); if(invalid) return send(400,{error:invalid});
    if(!process.env.ALRIMI_API_KEY) return send(503,{error:'.env 파일에 ALRIMI_API_KEY를 설정한 뒤 서버를 다시 실행해 주세요.'});
    try { return send(200,await fetchAlrimi(apiType,params,process.env.ALRIMI_API_KEY)); }
-   catch(error) { return send(error.code==='AUTH'?503:502,{error:error.name==='TimeoutError'?'학교알리미 응답 시간이 초과되었습니다. 다시 시도해 주세요.':error.message}); }
+   catch(error) { const mapped=alrimiErrorResponse(error); return send(mapped.status,{error:mapped.error}); }
   }
   if(url.pathname.startsWith('/api/')) {
    const endpoint=url.pathname.slice(5);
