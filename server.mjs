@@ -1,8 +1,7 @@
 import http from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { readFile } from 'node:fs/promises';
-const endpoints = { schoolInfo: ['ATPT_OFCDC_SC_CODE'], SchoolSchedule: ['ATPT_OFCDC_SC_CODE','SD_SCHUL_CODE','AA_FROM_YMD','AA_TO_YMD'], spsTimetable: ['ATPT_OFCDC_SC_CODE','SD_SCHUL_CODE','TI_FROM_YMD','TI_TO_YMD'] };
-const allowed = new Set(['ATPT_OFCDC_SC_CODE','SD_SCHUL_CODE','AA_FROM_YMD','AA_TO_YMD','TI_FROM_YMD','TI_TO_YMD']);
+const endpoints = { schoolInfo: ['ATPT_OFCDC_SC_CODE'], SchoolSchedule: ['ATPT_OFCDC_SC_CODE','SD_SCHUL_CODE','AA_FROM_YMD','AA_TO_YMD'], spsTimetable: ['ATPT_OFCDC_SC_CODE','SD_SCHUL_CODE','TI_FROM_YMD','TI_TO_YMD'], classInfo: ['ATPT_OFCDC_SC_CODE','SD_SCHUL_CODE','AY'] };
 export {fetchRows} from './public/neis.mjs';
 import {fetchRows} from './public/neis.mjs';
 const staticFiles={'/':'index.html','/app.js':'app.js','/neis.mjs':'neis.mjs','/config.js':'config.js','/style.css':'style.css','/favicon.svg':'favicon.svg'};
@@ -21,6 +20,7 @@ const server=http.createServer(async(req,res)=>{
    if(!/^[A-Z]\d{2}$/.test(params.ATPT_OFCDC_SC_CODE)) return send(400,{error:'교육청 코드가 올바르지 않습니다.'});
    if(params.SD_SCHUL_CODE&&!/^\d{7,10}$/.test(params.SD_SCHUL_CODE)) return send(400,{error:'학교 코드가 올바르지 않습니다.'});
    for(const k of Object.keys(params).filter(k=>k.endsWith('YMD'))) if(!/^\d{8}$/.test(params[k])) return send(400,{error:'날짜 형식이 올바르지 않습니다.'});
+   if(params.AY&&!/^\d{4}$/.test(params.AY)) return send(400,{error:'학년도 형식이 올바르지 않습니다.'});
    return send(200,{rows:await fetchRows(endpoint,params,key)});
   }
   if(!staticFiles[url.pathname]) return send(404,{error:'페이지가 없습니다.'});

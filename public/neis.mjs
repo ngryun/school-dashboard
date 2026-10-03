@@ -1,4 +1,4 @@
-const allowed = new Set(['ATPT_OFCDC_SC_CODE','SD_SCHUL_CODE','AA_FROM_YMD','AA_TO_YMD','TI_FROM_YMD','TI_TO_YMD']);
+const allowed = new Set(['ATPT_OFCDC_SC_CODE','SD_SCHUL_CODE','AA_FROM_YMD','AA_TO_YMD','TI_FROM_YMD','TI_TO_YMD','AY']);
 export async function fetchRows(endpoint, params, key, fetcher = fetch) {
   const rows=[];
   for(let page=1;page<=100;page++) {

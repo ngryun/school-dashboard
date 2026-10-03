@@ -1,5 +1,5 @@
 import { fetchRows } from './public/neis.mjs';
-const endpoints={schoolInfo:['ATPT_OFCDC_SC_CODE'],SchoolSchedule:['ATPT_OFCDC_SC_CODE','SD_SCHUL_CODE','AA_FROM_YMD','AA_TO_YMD'],spsTimetable:['ATPT_OFCDC_SC_CODE','SD_SCHUL_CODE','TI_FROM_YMD','TI_TO_YMD']};
+const endpoints={schoolInfo:['ATPT_OFCDC_SC_CODE'],SchoolSchedule:['ATPT_OFCDC_SC_CODE','SD_SCHUL_CODE','AA_FROM_YMD','AA_TO_YMD'],spsTimetable:['ATPT_OFCDC_SC_CODE','SD_SCHUL_CODE','TI_FROM_YMD','TI_TO_YMD'],classInfo:['ATPT_OFCDC_SC_CODE','SD_SCHUL_CODE','AY']};
 const json=(status,data)=>new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}});
 export default {
  async fetch(request,env,ctx){
@@ -15,7 +15,8 @@ export default {
    if(!/^[A-Z]\d{2}$/.test(params.ATPT_OFCDC_SC_CODE))return json(400,{error:'교육청 코드가 올바르지 않습니다.'});
    if(params.SD_SCHUL_CODE&&!/^\d{7,10}$/.test(params.SD_SCHUL_CODE))return json(400,{error:'학교 코드가 올바르지 않습니다.'});
    for(const k of Object.keys(params).filter(k=>k.endsWith('YMD')))if(!/^\d{8}$/.test(params[k]))return json(400,{error:'날짜 형식이 올바르지 않습니다.'});
-   if(endpoint!=='schoolInfo'){
+   if(params.AY&&!/^\d{4}$/.test(params.AY))return json(400,{error:'학년도 형식이 올바르지 않습니다.'});
+   if(endpoint==='SchoolSchedule'||endpoint==='spsTimetable'){
     const from=params.AA_FROM_YMD||params.TI_FROM_YMD,to=params.AA_TO_YMD||params.TI_TO_YMD;
     const parse=s=>Date.parse(s.slice(0,4)+'-'+s.slice(4,6)+'-'+s.slice(6,8));
     const span=parse(to)-parse(from);

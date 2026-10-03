@@ -298,3 +298,24 @@ dialog table{min-width:480px}
   .day .event{display:block!important;white-space:normal}
   .day-count{display:none!important}
 }
+
+/* refinements */
+.header-right{display:flex;align-items:center;gap:12px;min-width:0}
+.today-label{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.district-button .chip-count{margin-left:6px;background:#e6ebf0;color:var(--muted)}
+.district-button.active .chip-count{background:rgba(255,255,255,.22);color:#fff}
+#calendar{position:relative}
+.awaiting{opacity:1}
+.awaiting .weekdays,.awaiting .calendar-grid{opacity:.4;pointer-events:none}
+.calendar-prompt{position:absolute;inset:0;z-index:2;display:grid;place-items:center;padding:24px}
+.calendar-prompt>div{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-m);padding:26px 28px 24px;text-align:center;max-width:380px}
+.calendar-prompt .i{width:36px;height:36px;color:var(--accent);stroke-width:1.5;display:block;margin:0 auto 10px}
+.calendar-prompt strong{display:block;font-size:17px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.calendar-prompt p{margin:0 0 16px;font-size:13.5px;color:var(--muted);line-height:1.6}
+.day:nth-child(7n+1),.day:nth-child(7n){background:#fbfcfd}
+.day.outside{background:#f7f9fb}
+.day:has(.today){background:#f1f9f5}
+dialog::backdrop{-webkit-backdrop-filter:blur(4px)}
+@media(max-width:760px){.calendar-prompt{padding:12px}.calendar-prompt>div{padding:20px 16px}.today-label{display:none}}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.dialog-section h2 small{font-size:13px;font-weight:500;color:var(--muted);margin-left:8px;letter-spacing:0}
