@@ -4,6 +4,7 @@
 // 사용: npm run fetch:alrimi  (.env의 ALRIMI_API_KEY 사용, 올해 공시가 없으면 작년 공시)
 import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { fetchAlrimi } from '../alrimi.mjs';
+import { writeSummary } from './alrimi-summary.mjs';
 
 const key = process.env.ALRIMI_API_KEY;
 if (!key) { console.error('.env에 ALRIMI_API_KEY를 넣고 다시 실행하세요.'); process.exit(1); }
@@ -52,5 +53,6 @@ await Promise.all(Array.from({ length: 4 }, async () => {
 }));
 const sorted = Object.fromEntries(Object.entries(files).sort());
 await writeFile(new URL('index.json', out), JSON.stringify({ source: '학교알리미 공시정보(한국교육학술정보원)', fetched: new Date().toISOString().slice(0, 10), years: [...new Set(Object.values(sorted))].sort(), files: sorted }, null, 1) + '\n');
-console.log(`${Object.keys(sorted).length}개 파일 저장 → public/alrimi/` + (failed ? ` (실패 ${failed}건, 다시 실행하세요)` : ''));
+await writeSummary(out);
+console.log(`${Object.keys(sorted).length}개 파일과 summary.json 저장 → public/alrimi/` + (failed ? ` (실패 ${failed}건, 다시 실행하세요)` : ''));
 if (failed) process.exitCode = 1;
