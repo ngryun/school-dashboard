@@ -35,6 +35,8 @@ const server=http.createServer(async(req,res)=>{
    if(params.AY&&!/^\d{4}$/.test(params.AY)) return send(400,{error:'학년도 형식이 올바르지 않습니다.'});
    return send(200,{rows:await fetchRows(endpoint,params,key)});
   }
+  const snapshot=url.pathname.match(/^\/alrimi\/((?:\d{2}-\d{2}|index)\.json)$/);
+  if(snapshot){try{const body=await readFile(new URL('public/alrimi/'+snapshot[1],import.meta.url));res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff'});return res.end(body);}catch{return send(404,{error:'공시 자료 파일이 없습니다.'});}}
   if(!staticFiles[url.pathname]) return send(404,{error:'페이지가 없습니다.'});
   const file=staticFiles[url.pathname], content=await readFile(new URL('public/'+file,import.meta.url));
   res.writeHead(200,{'Content-Type':/\.m?js$/.test(file)?'text/javascript; charset=utf-8':file.endsWith('.css')?'text/css; charset=utf-8':file.endsWith('.json')?'application/json; charset=utf-8':file.endsWith('.svg')?'image/svg+xml':'text/html; charset=utf-8','X-Content-Type-Options':'nosniff'}); res.end(content);

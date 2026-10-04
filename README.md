@@ -32,6 +32,7 @@ npm start
 - 상단 지표 타일 4개: 학생 수·학급 수·교사 수·이번 달 일정(공시 연도와 집계 범위를 함께 표시)
 - 초등학교·중학교·고등학교·특수학교 필터
 - 월별 학사일정 달력·목록, 학교명·행사명 검색, 행사 상세보기
+- 학교별 현황 보드: 학교급별로 묶은 학교 카드에 학급·학생·교사 수(학교알리미 미연결 시 설립 연도), 학년별 학급 막대(같은 학교급끼리 같은 눈금, 특수학교는 과정별), 이번 달 학교 일정(토요휴업일·공휴일 제외, 다가오는 일정 우선)을 표시. 이름·학급·학생·일정 순 정렬과 카드/표 전환(이 브라우저에 기억), 120개교씩 더 보기
 - 학교 기본 정보, 주소, 전화, 팩스, 홈페이지, 설립일 등 상세보기
 - 학교별 학급 수(목록 열·지역 합계 타일)와 상세화면의 학년별 학급 구성(계열·학과)
 - 학교알리미 공시 기준 학생 수·교사 수(목록 열·지역 합계 타일·학생 수 상위 학교 카드), 상세화면의 학년별 학급·학생 수, 학급당·교사 1인당 학생 수, 직위별 교원 현황(교원 총계는 직위별 현황 기준)
@@ -57,36 +58,30 @@ npm start
 
 ## 학생 수·교원 수 (학교알리미 공시)
 
-학생 수와 교원 수는 [학교알리미 Open API](https://www.schoolinfo.go.kr/ng/go/pnnggo_a01_m0.do)(한국교육학술정보원, 공공누리 제3유형)에서 가져옵니다. 이 API는 브라우저 교차 출처 호출을 허용하지 않으므로 서버가 중계합니다. 로컬 서버(`server.mjs`)와 Cloudflare Worker(`worker.mjs`)가 `/api/alrimi/<항목>`으로 중계하며, GitHub Pages 정적 버전은 `public/config.js`의 `apiBase`(저장소 변수 `API_BASE`)에 적힌 Worker 주소를 호출합니다.
+학생 수와 교원 수는 [학교알리미 Open API](https://www.schoolinfo.go.kr/ng/go/pnnggo_a01_m0.do)(한국교육학술정보원, 공공누리 제3유형)에서 가져옵니다. 공시는 1년에 한 번(4월 1일 기준) 바뀌므로 **국내 PC에서 받은 공시 스냅숏을 저장소에 넣어 두고**(`public/alrimi/`) 화면이 그 파일을 읽습니다. 인증키는 스냅숏을 받을 때만 쓰며 페이지나 저장소에 들어가지 않습니다.
 
-- 사용 항목: `apiType=09` 학년별·학급별 학생수(학급수·학생수·학급당 학생수·교사수·교사 1인당 학생수), `apiType=22` 직위별 교원 현황(상세화면에서 자동 조회)
-- 조회 단위: 시도·시군구·학교급(`public/regions.json` 코드표, [schoolinfo-mcp](https://github.com/chrisryugj/schoolinfo-mcp) MIT 자료) 단위로 받아 학교명(공백 제거)으로 NEIS 학교와 맞춥니다. 공시 제외 학교나 명칭이 다른 분교는 표시되지 않을 수 있습니다.
-- 공시 연도: 올해 자료가 없으면 작년 자료를 사용하며 화면에 연도를 표시합니다. 공시 기준일은 매년 4월 1일입니다.
-- Worker는 자료가 있는 응답을 24시간, 자료 없음 응답을 1시간 캐시하고 오류 응답은 캐시하지 않습니다. 지역을 선택하면 학교급별로 한 번씩, 전체 지역은 시도 단위로 학교급당 한 번씩 호출합니다(시도 단위 자료가 없으면 시군구 단위로 내려갑니다).
-- 중계 API는 `apiType` 09·22와 코드표(`public/regions.json`)에 있는 시도·시군구 코드만 받습니다. 호출 자체는 누구나 할 수 있으므로 인증키 한도 소진이 우려되면 Cloudflare 대시보드의 Rate Limiting 규칙을 추가하세요.
+실시간 중계(Cloudflare Worker)를 쓰지 않는 이유: 학교알리미는 브라우저 교차 출처 호출을 허용하지 않고, 2026-10-04 시험에서 Cloudflare Worker가 보낸 요청 8건 중 7건이 연결 단계에서 끊겼습니다(같은 요청을 국내 PC에서 보내면 0.1초 안에 응답). 해외 클라우드 접속을 막는 것으로 보입니다.
 
-### 설정 절차
+- 사용 항목: `apiType=09` 학년별·학급별 학생수(학급수·학생수·학급당 학생수·교사수·교사 1인당 학생수), `apiType=22` 직위별 교원 현황(상세화면)
+- 스냅숏 구성: 시도·학교급마다 `public/alrimi/<시도코드>-<학교급코드>.json` 한 개(화면이 쓰는 열만, 0·빈 값 제외), 목록은 `public/alrimi/index.json`. 전국 17개 시도 68개 파일, 약 7MB(경기 초등 파일은 885KB, 압축 전송 118KB). 화면은 선택한 교육청의 학교급 파일만 받습니다. 시도 코드는 `public/regions.json`([schoolinfo-mcp](https://github.com/chrisryugj/schoolinfo-mcp) MIT 자료)을 따르며, 전라남도·광주광역시를 합친 중복 코드(전남광주통합특별시 12)는 받지 않습니다.
+- 학교 맞추기: 학교명(공백 제거)으로 NEIS 학교와 맞추고, 같은 이름이 둘 이상이면 학교알리미 지역명(`ADRCD_NM`)의 시·군·구로 가립니다. 2026년 공시 기준 전국 12,281개교 중 12,165개교(99.1%)가 맞았고 동명 학교 117곳은 시·군·구로 구분됐습니다. 맞지 않는 학교는 대부분 개교 예정·(가칭) 학교와 분교장입니다.
+- 열 배치: 학교알리미 OpenAPI 출력값 정의서 기준으로 초·중·고는 `COL_C1~C6` 학년·`C7` 특수학급·`C8` 순회학급, 특수학교는 `C1` 유치원·`C2~C7` 초1~6·`C8~C10` 중1~3·`C11~C13` 고1~3·`C14` 전공과·`C15~C18` 과정별 순회학급으로 읽습니다. 학교별 현황 카드의 학년별 막대는 이 학생 수를 학교마다 따로 눈금 잡아 그립니다(공시가 없으면 NEIS 학년별 학급 수).
+- 공시 연도: 올해 공시가 없으면 작년 공시를 받으며 화면에 연도를 표시합니다. NEIS 학급 편성을 아직 불러오지 않은 학교의 학급 수는 공시 학급 수로 표시합니다.
 
-1. **학교알리미 인증키 발급**: 위 링크에서 네이버 또는 카카오 계정으로 로그인한 뒤 API 인증키를 발급받습니다.
-2. **로컬 확인**: `.env`에 `ALRIMI_API_KEY=발급받은키`를 추가하고 `npm start`로 다시 실행한 뒤 지역을 선택해 학생 수·교원 수가 표시되는지 확인합니다.
-3. **Cloudflare Worker 배포**(무료 계정): 프로젝트 폴더에서 아래 명령을 차례로 실행합니다. 첫 명령은 브라우저에서 Cloudflare 로그인을 요구합니다. 배포가 끝나면 `https://school-dashboard.<계정>.workers.dev` 형태의 주소가 출력됩니다.
+### 스냅숏 갱신 (1년에 한 번, 새 공시가 나온 뒤)
 
-   ```sh
-   npx wrangler login
-   npm run deploy:worker
-   npx wrangler secret put ALRIMI_API_KEY
-   npx wrangler secret put NEIS_API_KEY
-   ```
-
-   `wrangler.toml`의 `ALLOWED_ORIGINS`에 Pages 주소(기본 https://ngryun.github.io)가 들어 있어야 브라우저 호출이 허용됩니다. Worker 주소로 접속하면 같은 앱이 서버 모드(인증키 서버 보관)로도 동작합니다. 브라우저 로그인이 안 되는 환경이면 Cloudflare 대시보드에서 "Edit Cloudflare Workers" 템플릿으로 API 토큰을 만들어 `CLOUDFLARE_API_TOKEN=토큰 CLOUDFLARE_ACCOUNT_ID=계정ID npm run deploy:worker` 처럼 환경변수로 넘겨도 됩니다.
-4. **GitHub Pages 연결**: 저장소 변수 `API_BASE`에 Worker 주소를 넣고 워크플로를 다시 실행합니다.
+1. [학교알리미 Open API](https://www.schoolinfo.go.kr/ng/go/pnnggo_a01_m0.do)에서 네이버·카카오 로그인으로 받은 인증키를 `.env`의 `ALRIMI_API_KEY`에 넣습니다.
+2. 국내 인터넷에 연결된 PC에서 아래 명령을 실행합니다. 1분 남짓 걸리며 시도·학교급별 결과가 출력됩니다.
 
    ```sh
-   gh variable set API_BASE --repo ngryun/school-dashboard --body "https://school-dashboard.<계정>.workers.dev"
-   gh workflow run deploy.yml --repo ngryun/school-dashboard
+   npm run fetch:alrimi
    ```
 
-5. **확인**: 사이드바의 데이터 안내(인증키 설정) 창에 "학생·교원 수(학교알리미): 중계 서버와 인증키가 설정되어 있습니다."가 표시되면 연결된 것입니다.
+3. `public/alrimi/` 변경을 커밋해 `main`에 푸시하면 Pages에 반영됩니다.
+
+### 실시간 중계(선택)
+
+스냅숏 파일이 없을 때만 예전 방식대로 `/api/alrimi/<항목>` 중계를 씁니다. 로컬 서버(`server.mjs`, `.env`의 `ALRIMI_API_KEY`)는 국내 PC에서 돌기 때문에 잘 동작합니다. Cloudflare Worker(`worker.mjs`, `npm run deploy:worker`, `npx wrangler secret put ALRIMI_API_KEY`, 저장소 변수 `API_BASE`)도 코드는 남아 있지만 위 이유로 권하지 않습니다. 중계 API는 `apiType` 09·22와 코드표에 있는 시도·시군구 코드만 받습니다.
 
 ## 검증
 
@@ -95,7 +90,7 @@ npm run check
 npm test
 ```
 
-페이지네이션, 조회 결과 없음, 인증 오류, 비정상 응답 및 상위 서버 오류 처리를 테스트합니다. 실제 인증키를 이용한 전체 학교 조회는 인증키 설정 후 확인이 필요합니다.
+페이지네이션, 조회 결과 없음, 인증 오류, 비정상 응답 및 상위 서버 오류 처리를 테스트합니다. 학교알리미 스냅숏의 학교 매칭률은 위 수치처럼 NEIS 전체 학교 목록과 대조해 확인했습니다.
 
 ## 동작 모드
 

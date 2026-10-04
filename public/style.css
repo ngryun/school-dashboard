@@ -388,3 +388,81 @@ dialog::backdrop{-webkit-backdrop-filter:blur(4px)}
 .chart-card footer .swatch{vertical-align:-1px;margin:0 2px 0 8px}
 .error-text{color:var(--danger)}.facts .muted{color:var(--muted)}
 @media(max-width:760px){.bars.cols-2{grid-template-columns:1fr}}
+
+/* ===== 학교별 현황 보드 ===== */
+.board-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px 18px;flex-wrap:wrap;padding:14px 20px}
+.board-summary{margin:0;font-size:14px;color:var(--ink-2)}
+.board-summary b{font-weight:750;color:var(--ink);font-variant-numeric:tabular-nums}
+.board-summary small{display:block;font-size:12px;color:var(--faint);margin-top:2px}
+.board-controls{display:flex;align-items:center;gap:10px}
+.sort-field{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--muted)}
+.sort-field select{width:auto;min-height:34px;padding:6px 34px 6px 11px;font-size:13px;border-radius:9px;background-position:right 10px center}
+.board{background:var(--surface-2);border-top:1px solid var(--line);padding:18px 20px 22px;display:grid;gap:26px}
+.board-prompt{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px dashed #b9dccd;border-radius:var(--r-m);padding:14px 16px}
+.board-prompt>.i{width:28px;height:28px;color:var(--accent);stroke-width:1.6}
+.board-prompt div{flex:1;min-width:0}
+.board-prompt strong{display:block;font-size:14px;font-weight:700;color:var(--ink)}
+.board-prompt p{margin:2px 0 0;font-size:12.5px;color:var(--muted);line-height:1.6}
+.board-prompt .button{white-space:nowrap}
+.school-group{display:grid;gap:12px}
+.group-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.group-head h3{margin:0;font-size:16px;font-weight:750;letter-spacing:-.3px}
+.group-head small{margin-left:6px;font-size:12.5px;color:var(--muted)}
+.group-head small b{color:var(--ink-2);font-weight:700;font-variant-numeric:tabular-nums}
+.school-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(310px,100%),1fr));gap:12px}
+.school-card{--k:var(--accent);--k-ink:var(--accent-ink);position:relative;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:17px 18px 14px;display:flex;flex-direction:column;gap:14px;min-width:0;box-shadow:var(--shadow-s);transition:border-color .15s,box-shadow .15s}
+.school-card::before{content:"";position:absolute;top:-1px;left:18px;width:36px;height:3px;border-radius:0 0 3px 3px;background:var(--k)}
+.school-card:hover{border-color:var(--line-2);box-shadow:var(--shadow-m)}
+.k-elementary{--k:var(--el);--k-ink:var(--el-ink)}.k-middle{--k:var(--mi);--k-ink:var(--mi-ink)}.k-high{--k:var(--hi);--k-ink:var(--hi-ink)}.k-special{--k:var(--sp);--k-ink:var(--sp-ink)}
+.sc-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.sc-title{min-width:0}
+.sc-kicker{display:flex;align-items:center;gap:8px;margin:0;font-size:12px;color:var(--muted)}
+.sc-kicker .badge{padding:2px 7px;font-size:11.5px}
+.sc-name{margin:7px 0 2px;font-size:17px;line-height:1.35}
+.sc-name .text-button{font-size:inherit;font-weight:750;letter-spacing:-.4px}
+.sc-sub{margin:0;font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.sc-head .icon-button{flex:none;width:30px;height:30px;color:var(--faint)}
+.sc-head .icon-button:hover{color:var(--accent-ink)}
+.sc-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin:0;background:var(--surface-2);border:1px solid var(--line);border-radius:10px}
+.sc-metrics.m3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.sc-metrics>div{padding:9px 11px 8px;min-width:0}
+.sc-metrics>div+div{border-left:1px solid var(--line)}
+.sc-metrics dt{font-size:11.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+.sc-metrics dd{margin:1px 0 0;font-size:19px;font-weight:750;letter-spacing:-.5px;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.sc-metrics dd small{font-size:11.5px;font-weight:500;color:var(--faint);margin-left:2px;letter-spacing:0}
+.sc-metrics dd.is-na{color:var(--line-2);font-weight:600}
+.sc-sec{min-width:0}
+.sc-sec+.sc-sec{padding-top:12px;border-top:1px solid var(--line)}
+.sc-sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 8px;font-size:12px;font-weight:650;color:var(--ink-2)}
+.sc-sec-head small{font-size:11.5px;font-weight:500;color:var(--faint)}
+.sc-na{margin:0;font-size:12.5px;color:var(--faint)}
+.gbars{display:flex;align-items:flex-end;gap:3px}
+.gbar{flex:1;min-width:0;text-align:center}
+.gbar svg{display:block;height:36px}
+.gbar-fill{fill:var(--k);opacity:.85}
+.gbar:hover .gbar-fill{opacity:1}
+.gbar b{display:block;margin-top:3px;font-size:12.5px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.3}
+.gbar small{display:block;font-size:10.5px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sc-events{list-style:none;margin:0 -6px;padding:0;display:grid;gap:1px}
+.sc-event{display:flex;align-items:baseline;gap:10px;width:100%;border:0;background:none;border-radius:7px;padding:5px 6px;text-align:left;font-size:13.5px;color:var(--ink-2);min-width:0}
+.sc-event:hover{background:var(--surface-2);color:var(--ink)}
+.sc-event time{flex:none;min-width:64px;font-size:12.5px;font-weight:650;color:var(--k-ink);font-variant-numeric:tabular-nums}
+.sc-event span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sc-more{margin:4px 0 0;border:0;background:none;padding:2px 0;font-size:12.5px;font-weight:600;color:var(--muted)}
+.sc-more:hover{color:var(--accent-ink);text-decoration:underline;text-underline-offset:3px}
+.board-more{display:flex;justify-content:center}
+#schools-view .table-wrap{border-top:1px solid var(--line)}
+.board-note{padding:0 20px 14px}
+.nowrap{white-space:nowrap}
+@media(max-width:760px){
+  .board-toolbar{padding:12px}
+  .board-note{padding:0 12px 12px}
+  .board-controls{width:100%;justify-content:space-between}
+  .board{padding:12px;gap:20px}
+  .board-prompt{flex-wrap:wrap}
+  .board-prompt .button{width:100%}
+  .school-card{padding:15px 14px 12px}
+  .sc-metrics dd{font-size:17px}
+  .sc-metrics>div{padding:8px 9px 7px}
+}
+@media print{.board{background:none;padding:0}.school-card{break-inside:avoid;box-shadow:none}.board-toolbar .board-controls,.board-prompt,.board-more,.sc-head .icon-button{display:none!important}}
