@@ -56,7 +56,10 @@ for (const [code, features] of [...byOffice].sort()) {
   const proj = { lng0: minX, lat0: maxY, kx: +(k * cos).toFixed(4), ky: +k.toFixed(4), pad };
   const xy = pt => { const [lng, lat] = shift(code, pt); return [(lng - proj.lng0) * proj.kx + pad, (proj.lat0 - lat) * proj.ky + pad]; };
   const r1 = n => Math.round(n * 10) / 10;
-  const path = g => rings(g).map(poly => poly.map(ring => { let last = ''; const pts = []; for (const pt of ring) { const [x, y] = xy(pt).map(r1), s = x + ',' + y; if (s !== last) pts.push(s); last = s; } return pts.length > 3 ? 'M' + pts.join('L') + 'Z' : ''; }).join('')).join('');
+  // 단순화·반올림 뒤 넓이가 사실상 0이 된 고리(점 몇 개가 한 줄로 겹친 것)는 지도에 짧은 선으로 남으므로 뺀다.
+  // 기준(0.5단위²)은 독도(약 2단위²)보다 훨씬 작아 실제 작은 섬은 남는다.
+  const area = pts => { let a = 0; for (let i = 0; i < pts.length; i++) { const [x1, y1] = pts[i], [x2, y2] = pts[(i + 1) % pts.length]; a += x1 * y2 - x2 * y1; } return Math.abs(a / 2); };
+  const path = g => rings(g).map(poly => poly.map(ring => { let last = ''; const pts = []; for (const pt of ring) { const q = xy(pt).map(r1), s = q.join(','); if (s !== last) pts.push(q); last = s; } return pts.length > 3 && area(pts) >= 0.5 ? 'M' + pts.map(q => q.join(',')).join('L') + 'Z' : ''; }).join('')).join('');
   const districts = features.map(f => { const [lx, ly] = xy([f.properties.lx, f.properties.ly]).map(r1); return { name: f.properties.name, d: path(f.geometry), lx, ly }; }).filter(d => d.d).sort((a, b) => a.name.localeCompare(b.name, 'ko'));
   // 점선 상자: 옮겨 그린 섬들(옮길 범위 안의 경계)의 실제 범위(옮긴 뒤)를 10단위 넓힌 범위. 지도 밖으로 나가지 않게 자른다.
   const boxes = (insets[code] || []).map(s => { const b = [Infinity, Infinity, -Infinity, -Infinity]; for (const f of features.filter(f => f.properties.name === s.name)) for (const poly of rings(f.geometry)) for (const ring of poly) for (const pt of ring) { if (pt[0] < s.lng[0] || pt[0] > s.lng[1] || pt[1] < s.lat[0] || pt[1] > s.lat[1]) continue; const [x, y] = xy(pt); b[0] = Math.min(b[0], x); b[1] = Math.min(b[1], y); b[2] = Math.max(b[2], x); b[3] = Math.max(b[3], y); } const W2 = Math.ceil(spanX * k + pad * 2), H2 = Math.ceil(spanY * k + pad * 2), x = Math.max(1, b[0] - 10), y = Math.max(1, b[1] - 10); return { name: s.name, x: r1(x), y: r1(y), w: r1(Math.min(W2 - 1, b[2] + 10) - x), h: r1(Math.min(H2 - 1, b[3] + 10) - y) }; });

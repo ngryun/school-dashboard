@@ -477,7 +477,9 @@ function schoolMap(){
  for(const s of state.allSchools){const p=mapPoint(s);if(!p){missing++;continue;}if(!hidden.has(s.SCHUL_KND_SC_NM))dots.push({s,p,r:dotPx(studentsOf(s),maxS)*zoom*u});}
  dots.sort((a,b)=>b.r-a.r);// 큰 점을 먼저 그려 작은 학교가 가려지지 않게 한다.
  const dotMarks=dots.map(({s,p,r})=>`<circle class="map-dot ${color(s.SCHUL_KND_SC_NM)}${studentsOf(s)==null?' is-na':''}${dim(districtOf(s))}" cx="${f(p[0])}" cy="${f(p[1])}" r="${f(r)}" data-map-school="${esc(s.SD_SCHUL_CODE)}"/>`).join('');
- const labels=shape.districts.map(d=>{const size=(d.name===focus?14.5:mapPx<500?10.5:12)*u;return `<text class="map-label${dim(d.name)}${d.name===focus?' is-focus':''}" x="${d.lx}" y="${d.ly}" font-size="${f(size)}" stroke-width="${f(3.5*u)}">${esc(d.name)}</text>`;}).join('');
+ // 확대했을 때 보이는 범위 가장자리에 걸린 이름은 잘려 보이므로 그리지 않는다(지역 이름 기준점이 안쪽 여백 밖이면 생략).
+ const inView=d=>!focus||d.name===focus||(d.lx>vx+28*u&&d.lx<vx+vw-28*u&&d.ly>vy+14*u&&d.ly<vy+vh-14*u);
+ const labels=shape.districts.filter(inView).map(d=>{const size=(d.name===focus?14.5:mapPx<500?10.5:12)*u;return `<text class="map-label${dim(d.name)}${d.name===focus?' is-focus':''}" x="${d.lx}" y="${d.ly}" font-size="${f(size)}" stroke-width="${f(3.5*u)}">${esc(d.name)}</text>`;}).join('');
  const scopeName=focus||sidoNameOf(state.loadedOffice);
  const svg=`<div class="map-wrap"><svg class="map-svg" viewBox="${f(vx)} ${f(vy)} ${f(vw)} ${f(vh)}" role="img" aria-label="${esc(scopeName+' 학교 지도: '+fmt(dots.length)+'개교'+(scale?', 시·군·구 색은 '+mLabel:''))}">${areas}${outline}${insets}${dotMarks}${labels}</svg><div class="map-tip" hidden></div></div>`;
  const kinds=types.slice(1).filter(t=>state.allSchools.some(s=>s.SCHUL_KND_SC_NM===t));
