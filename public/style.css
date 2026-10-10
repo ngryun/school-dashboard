@@ -559,6 +559,11 @@ dialog table{min-width:480px}
 .map-toolbar .segmented button{padding:5px 11px}
 .map-wrap{position:relative;margin:0 -6px;border-radius:10px;background:var(--surface-2);overflow:hidden}
 .map-svg{display:block;width:100%;height:auto;max-height:74vh}
+.map-wrap.is-zoomed .map-svg{touch-action:none;cursor:grab}
+.map-svg.is-dragging,.map-svg.is-dragging *{cursor:grabbing}
+.map-zoom{position:absolute;top:10px;right:10px;z-index:1;display:grid;gap:4px}
+.map-zoom .icon-button{box-shadow:var(--shadow)}
+.map-zoom .icon-button .i{width:16px;height:16px}
 .map-area{stroke:#fff;stroke-width:1.2px;stroke-linejoin:round;vector-effect:non-scaling-stroke;cursor:pointer;transition:opacity .2s,filter .15s}
 .map-area:hover{filter:brightness(.93)}
 .map-area.q0{fill:#e4e8ef}.map-area.q1{fill:#ccd3de}.map-area.q2{fill:#aeb8c8}.map-area.q3{fill:#8d99ae}.map-area.q4{fill:#6b7891}
@@ -572,7 +577,6 @@ dialog table{min-width:480px}
 .map-dot:hover{stroke:var(--ink);stroke-width:2px}
 .map-label{fill:var(--ink-2);font-weight:700;letter-spacing:-.2px;text-anchor:middle;dominant-baseline:middle;paint-order:stroke;stroke:rgba(255,255,255,.92);stroke-linejoin:round;pointer-events:none}
 .map-label.is-dim{opacity:.55}
-.map-label.is-focus{fill:var(--ink);font-weight:800}
 .map-inset rect{fill:none;stroke:var(--data-2);stroke-width:1px;stroke-dasharray:4 3;vector-effect:non-scaling-stroke}
 .map-inset text{fill:var(--muted);font-weight:600;text-anchor:middle}
 .map-tip{position:absolute;z-index:2;top:0;left:0;pointer-events:none;display:grid;gap:2px;min-width:160px;max-width:260px;padding:9px 12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow-hover);font-size:12.5px;line-height:1.5;color:var(--muted)}
