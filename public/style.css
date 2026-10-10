@@ -552,6 +552,48 @@ dialog table{min-width:480px}
 .key-row .button{white-space:nowrap}
 #key-help{display:block;font-size:12.5px;line-height:1.7;color:var(--muted);margin-top:10px}
 
+/* ===== 학교 지도 =====
+   시·군·구는 회색 5단(분위수, 차트 안에 파랑을 쓰지 않는 규칙에 따라 단일 계열 슬레이트), 학교는 학교급 색 점 + 흰 테두리.
+   선 굵기는 확대해도 같도록 non-scaling-stroke, 점·글자 크기는 app.js가 확대 배율(u)로 맞춘다. */
+.map-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}
+.map-toolbar .segmented button{padding:5px 11px}
+.map-wrap{position:relative;margin:0 -6px;border-radius:10px;background:var(--surface-2);overflow:hidden}
+.map-svg{display:block;width:100%;height:auto;max-height:74vh}
+.map-area{stroke:#fff;stroke-width:1.2px;stroke-linejoin:round;vector-effect:non-scaling-stroke;cursor:pointer;transition:opacity .2s,filter .15s}
+.map-area:hover{filter:brightness(.93)}
+.map-area.q0{fill:#e4e8ef}.map-area.q1{fill:#ccd3de}.map-area.q2{fill:#aeb8c8}.map-area.q3{fill:#8d99ae}.map-area.q4{fill:#6b7891}
+.map-area.q-na{fill:var(--surface-3)}.map-area.q-flat{fill:#e1e6ee}
+.map-area.is-dim{opacity:.4}
+.map-focus{fill:none;stroke:var(--ink);stroke-width:1.8px;stroke-linejoin:round;vector-effect:non-scaling-stroke;pointer-events:none}
+.map-dot{stroke:#fff;stroke-width:1.1px;vector-effect:non-scaling-stroke;cursor:pointer}
+.map-dot.elementary{fill:var(--el)}.map-dot.middle{fill:var(--mi)}.map-dot.high{fill:var(--hi)}.map-dot.special{fill:var(--sp)}
+.map-dot.is-na{fill-opacity:.55}
+.map-dot.is-dim{opacity:.3}
+.map-dot:hover{stroke:var(--ink);stroke-width:2px}
+.map-label{fill:var(--ink-2);font-weight:700;letter-spacing:-.2px;text-anchor:middle;dominant-baseline:middle;paint-order:stroke;stroke:rgba(255,255,255,.92);stroke-linejoin:round;pointer-events:none}
+.map-label.is-dim{opacity:.55}
+.map-label.is-focus{fill:var(--ink);font-weight:800}
+.map-inset rect{fill:none;stroke:var(--data-2);stroke-width:1px;stroke-dasharray:4 3;vector-effect:non-scaling-stroke}
+.map-inset text{fill:var(--muted);font-weight:600;text-anchor:middle}
+.map-tip{position:absolute;z-index:2;top:0;left:0;pointer-events:none;display:grid;gap:2px;min-width:160px;max-width:260px;padding:9px 12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow-hover);font-size:12.5px;line-height:1.5;color:var(--muted)}
+.map-tip[hidden]{display:none}
+.map-tip strong{font-size:13.5px;font-weight:800;color:var(--ink)}
+.map-tip b{font-weight:750;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.map-tip-sub{display:inline-flex;align-items:center;gap:6px}
+.map-tip .swatch{width:8px;height:8px;border-radius:2px}
+.map-legend{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px 32px}
+.map-legend-block{display:grid;gap:7px}
+.map-ramp,.map-sizes{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.map-ramp li{display:inline-flex;align-items:center;gap:6px}
+.map-sizes{align-items:flex-end}
+.map-sizes li{display:inline-flex;align-items:center;gap:6px}
+.map-sizes circle{fill:var(--data-3);stroke:var(--data-2);stroke-width:1px}
+.map-swatch{width:14px;height:10px;border-radius:3px;display:inline-block;flex:none;box-shadow:inset 0 0 0 1px rgba(9,30,66,.1)}
+.map-swatch.q0{background:#e4e8ef}.map-swatch.q1{background:#ccd3de}.map-swatch.q2{background:#aeb8c8}.map-swatch.q3{background:#8d99ae}.map-swatch.q4{background:#6b7891}
+.map-swatch.q-na{background:var(--surface-3)}.map-swatch.q-flat{background:#e1e6ee}
+.map-rank .text-button{gap:8px}
+.chart-card .facts{margin:0}
+
 /* ===== 반응형 ===== */
 @media(min-width:1500px){.day{min-height:148px}}
 @media(max-width:1240px){
@@ -567,7 +609,7 @@ dialog table{min-width:480px}
 /* 태블릿 세로(761~900px): 왼쪽 메뉴가 본문을 눌러 달력이 더 좁아지므로 메뉴를 위쪽 한 줄 탭으로 올린다. */
 @media(max-width:900px){
   .layout{grid-template-columns:minmax(0,1fr)}
-  .side{position:static;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:5px}
+  .side{position:static;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;padding:5px}
   .nav-label,.side-foot{display:none}
   .nav-group{display:contents}
   .nav{justify-content:center;white-space:nowrap;padding:9px 6px;font-size:12.5px;gap:5px}
@@ -586,10 +628,9 @@ dialog table{min-width:480px}
   #settings{padding:0;width:40px;min-height:40px}
   #settings span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
   .layout{gap:10px}
-  /* 메뉴 5개: 6칸 격자에 첫 줄 3개(span 2)·둘째 줄 2개(span 3)로 빈 칸 없이 채운다. 메뉴 수가 바뀌면 span을 조정한다. 아이콘을 빼야 '시도교육청 비교'가 들어간다. */
+  /* 메뉴 6개: 6칸 격자에 줄마다 3개(span 2)씩 두 줄로 채운다. 메뉴 수가 바뀌면 span을 조정한다. 아이콘을 빼야 '시도교육청 비교'가 들어간다. */
   .side{grid-template-columns:repeat(6,minmax(0,1fr))}
   .nav{padding:9px 4px;font-size:12.5px;gap:6px;grid-column:span 2}
-  .nav[data-view="calendar"],.nav[data-view="offices"]{grid-column:span 3}
   .nav .i{display:none}
   .sbar-row.wide{grid-template-columns:52px minmax(0,1fr) 80px;gap:8px}
   main{gap:10px}

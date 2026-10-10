@@ -37,6 +37,9 @@ const server=http.createServer(async(req,res)=>{
   }
   const snapshot=url.pathname.match(/^\/alrimi\/((?:\d{2}-\d{2}|index|summary)\.json)$/);
   if(snapshot){try{const body=await readFile(new URL('public/alrimi/'+snapshot[1],import.meta.url));res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff'});return res.end(body);}catch{return send(404,{error:'공시 자료 파일이 없습니다.'});}}
+  // 학교 지도 자료: 교육청별 시·군·구 경계(scripts/build-geo.mjs)와 시도별 학교 좌표(npm run fetch:geo).
+  const geo=url.pathname.match(/^\/geo\/((?:[A-Z]\d{2}|schools-\d{2})\.json)$/);
+  if(geo){try{const body=await readFile(new URL('public/geo/'+geo[1],import.meta.url));res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff'});return res.end(body);}catch{return send(404,{error:'지도 자료 파일이 없습니다.'});}}
   if(!staticFiles[url.pathname]) return send(404,{error:'페이지가 없습니다.'});
   const file=staticFiles[url.pathname], content=await readFile(new URL('public/'+file,import.meta.url));
   res.writeHead(200,{'Content-Type':/\.m?js$/.test(file)?'text/javascript; charset=utf-8':file.endsWith('.css')?'text/css; charset=utf-8':file.endsWith('.json')?'application/json; charset=utf-8':file.endsWith('.svg')?'image/svg+xml':file.endsWith('.png')?'image/png':'text/html; charset=utf-8','X-Content-Type-Options':'nosniff'}); res.end(content);

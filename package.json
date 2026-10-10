@@ -5,11 +5,13 @@
   "type": "module",
   "scripts": {
     "start": "node --env-file-if-exists=.env server.mjs",
-    "check": "node --check server.mjs && node --check public/app.js && node --check worker.mjs && node --check alrimi.mjs && node --check scripts/fetch-alrimi.mjs && node --check scripts/alrimi-summary.mjs",
+    "check": "node --check server.mjs && node --check public/app.js && node --check worker.mjs && node --check alrimi.mjs && node --check scripts/fetch-alrimi.mjs && node --check scripts/alrimi-summary.mjs && node --check scripts/fetch-geo.mjs && node --check scripts/build-geo.mjs",
     "test": "node --test",
     "build": "node build.mjs",
     "deploy:worker": "npx wrangler deploy",
-    "fetch:alrimi": "node --env-file-if-exists=.env scripts/fetch-alrimi.mjs"
+    "fetch:alrimi": "node --env-file-if-exists=.env scripts/fetch-alrimi.mjs",
+    "fetch:geo": "node --env-file-if-exists=.env scripts/fetch-geo.mjs",
+    "build:geo": "node scripts/build-geo.mjs"
   },
   "engines": {
     "node": ">=22"
