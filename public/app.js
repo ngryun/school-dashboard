@@ -428,7 +428,7 @@ function ensureAllAlrimi(){
 state.mapMetric='students';state.mapHide=new Set();
 const geoFiles=new Map();
 const geoFile=name=>{if(!geoFiles.has(name))geoFiles.set(name,fetch('geo/'+name).then(r=>{if(!r.ok)throw new Error(name);return r.json();}).catch(error=>{geoFiles.delete(name);throw error;}));return geoFiles.get(name);};
-let mapData=null,mapError='',mapLoading='',mapPx=720,mapView=null;// mapPx: 지도가 실제로 그려진 폭(px). 점·글자 크기를 화면 px로 맞추는 데 쓴다.
+let mapData=null,mapError='',mapLoading='',mapPx=720,mapView=null,mapLabels={districts:[],schools:[]};// mapPx: 지도가 실제로 그려진 폭(px). 점·글자 크기를 화면 px로 맞추는 데 쓴다.
 // 경로 문자열(M x,y L x,y … Z)의 경계 상자 [x1,y1,x2,y2].
 function pathBox(d){const n=d.match(/-?\d+(?:\.\d+)?/g).map(Number),b=[Infinity,Infinity,-Infinity,-Infinity];for(let i=0;i+1<n.length;i+=2){b[0]=Math.min(b[0],n[i]);b[1]=Math.min(b[1],n[i+1]);b[2]=Math.max(b[2],n[i]);b[3]=Math.max(b[3],n[i+1]);}return b;}
 function loadMap(){
@@ -455,6 +455,8 @@ function mapScale(rows,val){
  const groups=Array.from({length:k},(_,i)=>{const list=vals.filter(v=>classOf(v)===i);return list.length?{step:step(i),lo:list[0],hi:list[list.length-1]}:null;}).filter(Boolean);
  return {stepOf:v=>v==null?-1:step(classOf(v)),groups};
 }
+// 지도 학교 이름표: 퇴계초·춘천여고·춘천교대부설초·건국대사대부고·기린진동분교처럼 줄인다. 특수학교(○○학교)는 그대로.
+const shortSchool=n=>String(n||'').replace(/\s+/g,'').replace(/(초등학교|중학교)(.+)분교장$/,'$2분교').replace('교육대학교','교대').replace(/대학교사범대학부[설속]/,'대사대부').replace(/대학교부[설속]/,'대부').replace(/여자(중|고)/,'여$1').replace(/초등학교$/,'초').replace(/중학교$/,'중').replace(/고등학교$/,'고');
 // 점 반지름(화면 px): 학생 수의 제곱근에 비례(면적이 학생 수를 따라가게), 공시가 없는 학교는 가장 작은 점.
 const dotPx=(n,max)=>n==null?2.2:2.6+8.4*Math.sqrt(n/max);
 function mapRows(){const groups=new Map();for(const s of state.allSchools){const d=districtOf(s);if(!groups.has(d))groups.set(d,[]);groups.get(d).push(s);}return [...groups].map(([name,list])=>({name,list,a:agg(list,true)}));}
@@ -480,10 +482,11 @@ function schoolMap(){
  for(const s of state.allSchools){const p=mapPoint(s);if(!p){if(!focus||districtOf(s)===focus)missing++;continue;}if(!hidden.has(s.SCHUL_KND_SC_NM))dots.push({s,p,px:dotPx(studentsOf(s),maxS)});}
  dots.sort((a,b)=>b.px-a.px);// 큰 점을 먼저 그려 작은 학교가 가려지지 않게 한다.
  const dotMarks=dots.map(({s,p,px})=>`<circle class="map-dot ${color(s.SCHUL_KND_SC_NM)}${studentsOf(s)==null?' is-na':''}${dim(districtOf(s))}" cx="${f(p[0])}" cy="${f(p[1])}" r="${f(px*u)}" data-px="${f(px)}" data-map-school="${esc(s.SD_SCHUL_CODE)}"/>`).join('');
- // 고른 지역의 이름은 제목에 있고 시내 점을 가리므로 지도에는 쓰지 않는다. 보이는 범위 가장자리에 걸린 이름도 잘려 보여 숨긴다(applyMapView가 확대·이동 때마다 다시 판정).
- const labels=shape.districts.filter(d=>d.name!==focus).map(d=>{const px=mapPx<500?10.5:12;return `<text class="map-label${dim(d.name)}" x="${d.lx}" y="${d.ly}" font-size="${f(px*u)}" stroke-width="${f(3.5*u)}" data-px="${px}">${esc(d.name)}</text>`;}).join('');
+ // 지역·학교 이름은 지도 위 덧층(.map-overlay)에 화면 px로 그린다. 크게 확대하면 지도 단위로 아주 작은 글자를 키워 그리게 되어 글자가 깨지기 때문이다.
+ // 고른 지역의 이름은 제목에 있고 시내 점을 가리므로 쓰지 않는다. 학교 이름표는 큰 학교부터 자리를 잡는다(applyMapView → drawMapLabels).
+ mapLabels={districts:shape.districts.filter(d=>d.name!==focus).map(d=>({name:d.name,x:d.lx,y:d.ly,dim:!!dim(d.name)})),schools:dots.filter(({s})=>!focus||districtOf(s)===focus).map(({s,p,px})=>({name:shortSchool(s.SCHUL_NM),x:p[0],y:p[1],px}))};
  const scopeName=focus||sidoNameOf(state.loadedOffice);
- const svg=`<div class="map-wrap"><svg class="map-svg" viewBox="${f(vx)} ${f(vy)} ${f(vw)} ${f(vh)}" role="img" aria-label="${esc(scopeName+' 학교 지도: '+fmt(dots.length)+'개교'+(scale?', 시·군·구 색은 '+mLabel:''))}">${areas}${outline}${insets}${dotMarks}${labels}</svg><div class="map-tip" hidden></div><div class="map-zoom" role="group" aria-label="지도 확대"><button type="button" class="icon-button" data-map-zoom="in" aria-label="확대">${icon('plus')}</button><button type="button" class="icon-button" data-map-zoom="out" aria-label="축소">${icon('minus')}</button><button type="button" class="icon-button" data-map-zoom="reset" aria-label="처음 범위로">${icon('reset')}</button></div></div>`;
+ const svg=`<div class="map-wrap"><svg class="map-svg"${focus?' data-focus="1"':''} viewBox="${f(vx)} ${f(vy)} ${f(vw)} ${f(vh)}" role="img" aria-label="${esc(scopeName+' 학교 지도: '+fmt(dots.length)+'개교'+(scale?', 시·군·구 색은 '+mLabel:''))}">${areas}${outline}${insets}${dotMarks}</svg><svg class="map-overlay" aria-hidden="true"></svg><div class="map-tip" hidden></div><div class="map-zoom" role="group" aria-label="지도 확대"><button type="button" class="icon-button" data-map-zoom="in" aria-label="확대">${icon('plus')}</button><button type="button" class="icon-button" data-map-zoom="out" aria-label="축소">${icon('minus')}</button><button type="button" class="icon-button" data-map-zoom="reset" aria-label="처음 범위로">${icon('reset')}</button></div></div>`;
  // 학교급 칩의 개수는 지금 보는 범위(지역을 고르면 그 지역)의 학교 수. 칩 종류는 교육청 기준으로 두어 지역을 바꿔도 칩 자리가 그대로다.
  const kinds=types.slice(1).filter(t=>state.allSchools.some(s=>s.SCHUL_KND_SC_NM===t)),scoped=focus?state.allSchools.filter(s=>districtOf(s)===focus):state.allSchools;
  const toolbar=`<div class="map-toolbar"><div class="segmented" role="group" aria-label="시·군·구 색칠 기준">${Object.entries(mapMetrics).map(([k,[label]])=>`<button type="button" data-map-metric="${k}" class="${k===metric?'selected':''}" aria-pressed="${k===metric}">${label}</button>`).join('')}</div><div class="chips" role="group" aria-label="지도에 표시할 학교급">${kinds.map(t=>`<button type="button" class="chip${hidden.has(t)?'':' active'}" data-map-kind="${t}" aria-pressed="${!hidden.has(t)}"><span class="swatch ${color(t)}"></span>${t==='특수학교'?'특수':t.replace('학교','')}<span class="chip-count">${fmt(scoped.filter(s=>s.SCHUL_KND_SC_NM===t).length)}</span></button>`).join('')}</div></div>`;
@@ -519,10 +522,37 @@ function renderMap(){const view=$('#map-view');view.innerHTML=schoolMap();const 
 function applyMapView(svg){
  const v=mapView,u=v.w/mapPx,n=x=>x.toFixed(2);svg.setAttribute('viewBox',`${n(v.x)} ${n(v.y)} ${n(v.w)} ${n(v.h)}`);
  for(const c of svg.querySelectorAll('.map-dot'))c.setAttribute('r',n(c.dataset.px*u));
- for(const t of svg.querySelectorAll('.map-label')){const x=+t.getAttribute('x'),y=+t.getAttribute('y');t.setAttribute('font-size',n(t.dataset.px*u));t.setAttribute('stroke-width',n(3.5*u));t.setAttribute('display',x>v.x+28*u&&x<v.x+v.w-28*u&&y>v.y+14*u&&y<v.y+v.h-14*u?'inline':'none');}
  for(const t of svg.querySelectorAll('.map-inset text'))t.setAttribute('font-size',n(10.5*u));
  const zoomed=v.w<v.base.w*.98,wrap=svg.closest('.map-wrap'),btn=k=>wrap.querySelector(`[data-map-zoom="${k}"]`);
  wrap.classList.toggle('is-zoomed',zoomed);btn('in').disabled=v.w<=mapMinW()*1.01;btn('out').disabled=!zoomed;btn('reset').disabled=!zoomed;
+ drawMapLabels(svg,wrap.querySelector('.map-overlay'),v.w<=v.base.w/3);
+}
+// 덧층에 지역 이름과 학교 이름표를 그린다. 지도 좌표 → 덧층 px는 지도 SVG의 화면 변환(getScreenCTM)으로 바꾼다.
+// 학교 이름표는 지역을 골랐거나 교육청 전체에서 3배 넘게 확대했을 때만(deep), 점 오른쪽(안 되면 왼쪽)에 놓고 이미 놓인 이름표·다른 점·지역 이름과 겹치거나
+// 지도 밖으로 나가면 생략한다. 확대할수록 더 많은 학교 이름이 보인다.
+function drawMapLabels(svg,overlay,deep){
+ const m=svg.getScreenCTM();if(!overlay||!m)return;
+ const wr=overlay.getBoundingClientRect(),P=(x,y)=>[m.a*x+m.c*y+m.e-wr.left,m.b*x+m.d*y+m.f-wr.top],v=mapView,[L,T]=P(v.x,v.y),[R,B]=P(v.x+v.w,v.y+v.h);
+ const small=mapPx<500,dfs=small?10.5:12,fs=small?10.5:11.5,lh=fs*1.3,n=x=>x.toFixed(1),hit=(a,b)=>a[0]<b[2]&&b[0]<a[2]&&a[1]<b[3]&&b[1]<a[3],out=[];
+ overlay.setAttribute('viewBox',`0 0 ${n(wr.width)} ${n(wr.height)}`);
+ // 지역 이름: 기준점이 보이는 범위 안쪽 여백 안에 있을 때만(가장자리에 걸려 잘려 보이지 않게).
+ const blocks=[];
+ for(const d of mapLabels.districts){const [x,y]=P(d.x,d.y);if(x<L+28||x>R-28||y<T+14||y>B-14)continue;const w=d.name.length*dfs*.95/2;blocks.push([x-w,y-dfs*.7,x+w,y+dfs*.7]);out.push(`<text class="map-label${d.dim?' is-dim':''}" x="${n(x)}" y="${n(y)}" font-size="${dfs}" stroke-width="3.5">${esc(d.name)}</text>`);}
+ if(mapLabels.schools.length&&(svg.dataset.focus||deep)){
+  // 장애물: 보이는 점(조금 줄인 상자).
+  for(const c of svg.querySelectorAll('.map-dot')){const [x,y]=P(+c.getAttribute('cx'),+c.getAttribute('cy')),r=c.dataset.px*.8;if(x>=L&&x<=R&&y>=T&&y<=B)blocks.push([x-r,y-r,x+r,y+r]);}
+  const placed=[];
+  for(const s of mapLabels.schools){
+   const [x,y]=P(s.x,s.y);if(x<L||x>R||y<T||y>B)continue;
+   const w=s.name.length*fs*.95+2;
+   for(const side of [1,-1]){
+    const x0=side>0?x+s.px+3:x-s.px-3-w,box=[x0,y-lh/2,x0+w,y+lh/2];
+    if(box[0]<L+2||box[2]>R-2||box[1]<T+2||box[3]>B-2||placed.some(b=>hit(b,box))||blocks.some(b=>hit(b,box)))continue;
+    placed.push(box);out.push(`<text class="map-school-label" x="${n(side>0?x+s.px+3:x-s.px-3)}" y="${n(y)}" text-anchor="${side>0?'start':'end'}" font-size="${fs}" stroke-width="3">${esc(s.name)}</text>`);break;
+   }
+  }
+ }
+ overlay.innerHTML=out.join('');
 }
 const mapMinW=()=>mapData.shape.w/25;// 가장 크게 확대했을 때 보이는 폭(교육청 지도 폭의 1/25, 강원이면 약 10km)
 // cx·cy(지도 단위)를 중심으로 factor배 확대. 처음 범위보다 넓게 줄이지 않고, 보이는 범위가 처음 범위 밖으로 나가지 않게 한다.
