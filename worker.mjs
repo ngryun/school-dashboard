@@ -52,6 +52,7 @@ export default {
    }catch(error){return json(502,{error:error.name==='TimeoutError'?'NEIS 응답 시간이 초과되었습니다. 다시 시도해 주세요.':'NEIS 조회에 실패했습니다. 잠시 후 다시 시도해 주세요.'});}
   }
   const asset=ASSETS[url.pathname];if(!asset)return json(404,{error:'페이지가 없습니다.'});
-  return new Response(request.method==='HEAD'?null:asset.body,{headers:{'content-type':asset.type,'cache-control':'no-cache','x-content-type-options':'nosniff','referrer-policy':'strict-origin-when-cross-origin','content-security-policy':"default-src 'self'; script-src 'self'; style-src 'self' https://cdn.jsdelivr.net; font-src https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'"}});
+  const body=asset.binary?Uint8Array.from(atob(asset.body),c=>c.charCodeAt(0)):asset.body;
+  return new Response(request.method==='HEAD'?null:body,{headers:{'content-type':asset.type,'cache-control':'no-cache','x-content-type-options':'nosniff','referrer-policy':'strict-origin-when-cross-origin','content-security-policy':"default-src 'self'; script-src 'self'; style-src 'self' https://cdn.jsdelivr.net; font-src https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'"}});
  }
 };

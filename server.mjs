@@ -7,7 +7,7 @@ import {fetchRows} from './public/neis.mjs';
 export {fetchAlrimi, validateAlrimi, regionCodes} from './alrimi.mjs';
 import {fetchAlrimi, validateAlrimi, regionCodes, alrimiErrorResponse} from './alrimi.mjs';
 const knownCodes=regionCodes(JSON.parse(await readFile(new URL('public/regions.json',import.meta.url),'utf8')));
-const staticFiles={'/':'index.html','/app.js':'app.js','/neis.mjs':'neis.mjs','/config.js':'config.js','/style.css':'style.css','/favicon.svg':'favicon.svg','/regions.json':'regions.json'};
+const staticFiles={'/':'index.html','/app.js':'app.js','/neis.mjs':'neis.mjs','/config.js':'config.js','/style.css':'style.css','/favicon.svg':'favicon.svg','/bi.png':'bi.png','/regions.json':'regions.json'};
 const server=http.createServer(async(req,res)=>{
  const send=(status,data)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(data));};
  try {
@@ -39,7 +39,7 @@ const server=http.createServer(async(req,res)=>{
   if(snapshot){try{const body=await readFile(new URL('public/alrimi/'+snapshot[1],import.meta.url));res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff'});return res.end(body);}catch{return send(404,{error:'공시 자료 파일이 없습니다.'});}}
   if(!staticFiles[url.pathname]) return send(404,{error:'페이지가 없습니다.'});
   const file=staticFiles[url.pathname], content=await readFile(new URL('public/'+file,import.meta.url));
-  res.writeHead(200,{'Content-Type':/\.m?js$/.test(file)?'text/javascript; charset=utf-8':file.endsWith('.css')?'text/css; charset=utf-8':file.endsWith('.json')?'application/json; charset=utf-8':file.endsWith('.svg')?'image/svg+xml':'text/html; charset=utf-8','X-Content-Type-Options':'nosniff'}); res.end(content);
+  res.writeHead(200,{'Content-Type':/\.m?js$/.test(file)?'text/javascript; charset=utf-8':file.endsWith('.css')?'text/css; charset=utf-8':file.endsWith('.json')?'application/json; charset=utf-8':file.endsWith('.svg')?'image/svg+xml':file.endsWith('.png')?'image/png':'text/html; charset=utf-8','X-Content-Type-Options':'nosniff'}); res.end(content);
  } catch(error) {send(502,{error:error.name==='TimeoutError'?'NEIS 응답 시간이 초과되었습니다. 다시 시도하세요.':error.message});}
 });
 if(process.argv[1] && fileURLToPath(import.meta.url)===process.argv[1]) server.listen(Number(process.env.PORT)||3210,'127.0.0.1',()=>console.log('EducationSpecialist → http://127.0.0.1:'+(process.env.PORT||3210)));

@@ -45,7 +45,8 @@ code{background:var(--surface-3);padding:2px 4px;border-radius:4px}
 .app{max-width:1480px;margin:0 auto;padding:16px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
 .topbar{display:flex;align-items:center;gap:14px;padding:14px 18px;min-width:0}
 .brand{display:grid;flex:none}
-.brand-mark{width:40px;height:40px;display:block}
+/* 강원교육 BI(심벌+"모두가 빛나는 강원교육", 여백을 잘라 720×121). seolak_club 머리 카드와 같이 BI | 구분선 | 제목 순서. */
+.brand-bi{display:block;height:36px;width:auto}
 .topbar-divider{width:1px;height:40px;background:var(--line);flex:none}
 .topbar-title{min-width:0;display:grid}
 .topbar-title strong{font-size:22px;font-weight:800;letter-spacing:-.6px;line-height:1.25}
@@ -479,9 +480,10 @@ dialog table{min-width:480px}
 @media(max-width:760px){
   .app{padding:10px;gap:10px}
   .topbar{padding:10px 12px;gap:10px}
-  .brand-mark{width:32px;height:32px}
-  .topbar-divider,.topbar-title span{display:none}
-  .topbar-title strong{font-size:18px}
+  .brand-bi{height:26px}
+  .topbar-divider{height:30px}
+  .topbar-title span{display:none}
+  .topbar-title strong{font-size:18px;white-space:nowrap}
   .topbar-right{gap:6px}
   .source{font-size:11.5px;padding:5px 10px 5px 8px;max-width:52vw}
   #settings{padding:0;width:36px;min-height:36px}
@@ -558,9 +560,11 @@ dialog table{min-width:480px}
   footer{display:block;line-height:1.7}
   footer span{display:none}
 }
+@media(max-width:520px){.source{display:none}}
 @media(max-width:420px){
   .kpi strong{font-size:20px}
-  .source{max-width:44vw}
+  .brand-bi{height:22px}
+  .topbar-title strong{font-size:16px}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 @media print{
