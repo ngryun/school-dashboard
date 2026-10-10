@@ -5,16 +5,18 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const icon=name=>'<svg class="i" aria-hidden="true"><use href="#i-'+name+'"/></svg>';
 // --- 차트 부품 (라이브러리 없음, 인라인 SVG). CSP 때문에 색은 클래스, 길이는 SVG 속성으로만 표현한다.
 const pct=(n,total)=>total?Math.round(n/total*1000)/10:0;
-function donutChart({segments,center,sub,size=152,stroke=18,label}){
+function donutChart({segments,center,sub,size=152,stroke=18,label,legend=true}){
  const total=segments.reduce((a,s)=>a+(s.value||0),0),r=(size-stroke)/2,c=2*Math.PI*r,live=segments.filter(s=>s.value>0),gap=live.length>1?2.5:0;let offset=0;
  const arcs=live.map(s=>{const len=Math.max(0,c*s.value/total-gap),el=`<circle class="donut-seg ${esc(s.cls)}" r="${r}" cx="${size/2}" cy="${size/2}" stroke-width="${stroke}" stroke-dasharray="${len.toFixed(2)} ${(c-len).toFixed(2)}" stroke-dashoffset="${(-offset).toFixed(2)}" tabindex="0"><title>${esc(s.label)} ${fmt(s.value)} (${pct(s.value,total)}%)</title></circle>`;offset+=len+gap;return el;});
- return `<div class="donut"><svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" role="img" aria-label="${esc(label||'')}"><g transform="rotate(-90 ${size/2} ${size/2})">${total?arcs.join(''):`<circle class="donut-track" r="${r}" cx="${size/2}" cy="${size/2}" stroke-width="${stroke}"/>`}</g><text x="50%" y="47%" class="donut-value" text-anchor="middle">${esc(center)}</text><text x="50%" y="63%" class="donut-sub" text-anchor="middle">${esc(sub||'')}</text></svg><ul class="legend-list">${segments.map(s=>`<li class="${s.value?'':'is-zero'}"><span class="swatch ${esc(s.cls)}"></span><span class="lg-label">${esc(s.label)}</span><b>${fmt(s.value)}</b><small>${total&&s.value?pct(s.value,total)+'%':'—'}</small></li>`).join('')}</ul></div>`;
+ return `<div class="donut"><svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" role="img" aria-label="${esc(label||'')}"><g transform="rotate(-90 ${size/2} ${size/2})">${total?arcs.join(''):`<circle class="donut-track" r="${r}" cx="${size/2}" cy="${size/2}" stroke-width="${stroke}"/>`}</g><text x="50%" y="47%" class="donut-value" text-anchor="middle">${esc(center)}</text><text x="50%" y="63%" class="donut-sub" text-anchor="middle">${esc(sub||'')}</text></svg>${legend?`<ul class="legend-list">${segments.map(s=>`<li class="${s.value?'':'is-zero'}"><span class="swatch ${esc(s.cls)}"></span><span class="lg-label">${esc(s.label)}</span><b>${fmt(s.value)}</b><small>${total&&s.value?pct(s.value,total)+'%':'—'}</small></li>`).join('')}</ul>`:''}</div>`;
 }
 function barChart({rows,unit='',cls='accent',max,cols=1}){
  const top=max||Math.max(1,...rows.map(r=>r.value||0));
- return `<div class="bars${cols>1?' cols-2':''}">${rows.map(r=>{const w=r.value>0?Math.max(1.2,r.value/top*100):0,c=esc(r.cls||(r.muted?'neutral':cls));return `<div class="bar-row${r.muted?' is-muted':''}" title="${esc(r.label)} ${fmt(r.value)}${esc(unit)}${r.hint?' · '+esc(r.hint):''}"><span class="bar-label">${esc(r.label)}</span><svg class="bar-track" height="10" width="100%" aria-hidden="true"><line class="bar-axis" x1="0.5" y1="0" x2="0.5" y2="10"/>${w?`<rect class="bar-fill ${c}" width="${w.toFixed(1)}%" height="10" rx="3"/><rect class="bar-fill ${c}" width="3" height="10"/>`:''}</svg><b class="bar-value">${fmt(r.value)}<small>${esc(unit)}</small></b></div>`;}).join('')}</div>`;
+ return `<div class="bars${cols>1?' cols-2':''}">${rows.map(r=>{const w=r.value>0?Math.max(1.2,r.value/top*100):0,c=esc(r.cls||(r.muted?'neutral':cls));return `<div class="bar-row${r.muted?' is-muted':''}" title="${esc(r.label)} ${fmt(r.value)}${esc(unit)}${r.hint?' · '+esc(r.hint):''}"><span class="bar-label">${esc(r.label)}</span><svg class="bar-track" height="8" width="100%" aria-hidden="true"><line class="bar-axis" x1="0.5" y1="0" x2="0.5" y2="8"/>${w?`<rect class="bar-fill ${c}" width="${w.toFixed(1)}%" height="8" rx="3"/><rect class="bar-fill ${c}" width="3" height="8"/>`:''}</svg><b class="bar-value">${fmt(r.value)}<small>${esc(unit)}</small></b></div>`;}).join('')}</div>`;
 }
-function chartCard({title,caption,body,note,wide}){return `<article class="chart-card${wide?' wide':''}"><header><h3>${esc(title)}</h3>${caption?`<span>${esc(caption)}</span>`:''}</header>${body}${note?`<footer>${note}</footer>`:''}</article>`;}
+// span: 12칸 격자에서 차지하는 칸 수(한눈에 보기·시도교육청 화면 공통).
+function chartCard({title,caption,body,note,wide,span}){return `<article class="chart-card span-${span||(wide?12:4)}"><header><h3>${esc(title)}</h3>${caption?`<span>${esc(caption)}</span>`:''}</header>${body}${note?`<footer>${note}</footer>`:''}</article>`;}
+const kpiCell=(label,value,unit,sub)=>`<div class="kpi"><span class="kpi-label">${label}</span><strong>${value}${value!=='—'&&unit?`<small>${unit}</small>`:''}</strong><span class="kpi-sub">${sub||''}</span></div>`;
 const chartEmpty=(text,iconName='calendar')=>`<div class="chart-empty">${icon(iconName)}<p>${esc(text)}</p></div>`;
 
 const offices={B10:'서울특별시교육청',C10:'부산광역시교육청',D10:'대구광역시교육청',E10:'인천광역시교육청',F10:'광주광역시교육청',G10:'대전광역시교육청',H10:'울산광역시교육청',I10:'세종특별자치시교육청',J10:'경기도교육청',K10:'강원특별자치도교육청',M10:'충청북도교육청',N10:'충청남도교육청',P10:'전북특별자치도교육청',Q10:'전라남도교육청',R10:'경상북도교육청',S10:'경상남도교육청',T10:'제주특별자치도교육청'};
@@ -117,7 +119,7 @@ function alrimiStatus(){return alrimiProbe=probeAlrimi();}
 async function probeAlrimi(){const el=$('#alrimi-status');if(await alrimiSnapshot()){alrimiReady=true;el.textContent=`학생·교사 수(학교알리미): ${snapshotIndex.years.join('·')} 공시 자료를 사용합니다(${snapshotIndex.fetched} 수집).`;return;}if(!alrimiEnabled()){el.textContent='학생·교사 수(학교알리미): 중계 서버 주소(API_BASE)가 설정되지 않아 표시하지 않습니다.';alrimiReady=false;return;}try{const r=await fetch((alrimiBase()||'.')+'/api/alrimi/status',{cache:'no-store'});const d=await r.json();alrimiReady=!!d.configured;el.textContent=d.configured?'학생·교사 수(학교알리미): 중계 서버와 인증키가 설정되어 있습니다.':'학생·교사 수(학교알리미): 중계 서버는 연결되었지만 인증키가 설정되지 않았습니다.';}catch{alrimiReady=false;el.textContent='학생·교사 수(학교알리미): 중계 서버에 연결할 수 없습니다.';}}
 async function loadClassesFor(school,signal){const k=classKey(school);if(classCache.has(k))return classCache.get(k);const rows=await api('classInfo',{ATPT_OFCDC_SC_CODE:school.ATPT_OFCDC_SC_CODE,SD_SCHUL_CODE:school.SD_SCHUL_CODE,AY:ay()},signal);const c=summarizeClasses(rows);classCache.set(k,c);return c;}
 const now=new Date();
-const state={month:new Date(now.getFullYear(),now.getMonth(),1),type:'전체',query:'',view:'calendar',list:false,schools:[],events:[],demo:true,busy:false,revision:0,loadedOffice:'K10',loadedDistrict:'',allSchools:[],failures:0,eventsLoaded:false,loadingSchools:false,schoolLayout:'cards',schoolSort:'name',cardLimit:120,officeSort:'students'};
+const state={month:new Date(now.getFullYear(),now.getMonth(),1),type:'전체',query:'',view:'overview',districtSort:'schools',list:false,schools:[],events:[],demo:true,busy:false,revision:0,loadedOffice:'K10',loadedDistrict:'',allSchools:[],failures:0,eventsLoaded:false,loadingSchools:false,schoolLayout:'cards',schoolSort:'name',cardLimit:120,officeSort:'students'};
 try{state.schoolLayout=localStorage.getItem('schoolLayout')==='table'?'table':'cards';state.schoolSort=localStorage.getItem('schoolSort')||'name';}catch{}
 const ymd=d=>`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
 const pretty=d=>/^\d{8}$/.test(d||'')?`${d.slice(0,4)}.${d.slice(4,6)}.${d.slice(6,8)}`:d||'—';
@@ -125,12 +127,15 @@ function demoSchools(){return ['솔빛초등학교','늘봄초등학교','바다
 function demoEvents(){const names=['2학기 교육과정 설명회','학교운영위원회','현장체험학습','학부모 공개수업','진로 탐색의 날','학교 스포츠 한마당','교직원 연수','독서 문화 주간']; const list=[];const last=new Date(state.month.getFullYear(),state.month.getMonth()+1,0).getDate();for(let day=1;day<=last;day++){const d=new Date(state.month.getFullYear(),state.month.getMonth(),day);if(d.getDay()===0||d.getDay()===6)continue;for(let j=0;j<(day%3===0?3:day%2===0?2:1);j++){const school=state.allSchools[(day+j*3)%state.allSchools.length];if(school)list.push({...school,AA_YMD:ymd(d),EVENT_NM:names[(day+j)%names.length],EVENT_CNTNT:'화면 확인용 가상 일정입니다. 실제 학교 행사와 관계없습니다.'});}}return list.filter(e=>!state.loadedDistrict||districtOf(e)===state.loadedDistrict);}
 $('#office').innerHTML=Object.entries(offices).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
 try{$('#office').value=localStorage.getItem('office')||'K10';}catch{}if(!$('#office').value)$('#office').value='K10';
+let centeredDistrict=null;
 function renderDistricts(){
  const office=$('#office').value;
  const regions=office===state.loadedOffice&&!state.demo?[...new Set(state.allSchools.map(districtOf))].sort((a,b)=>a.localeCompare(b,'ko')):office==='K10'?gangwonDistricts:[];
  const counts=new Map();if(!state.demo&&office===state.loadedOffice)for(const s of state.allSchools){const d=districtOf(s);counts.set(d,(counts.get(d)||0)+1);}
  const count=d=>counts.size?'<span class="chip-count">'+(d?counts.get(d)||0:state.allSchools.length)+'</span>':'';
  $('#districts').innerHTML=['',...regions].map(d=>'<button type="button" class="district-button '+(state.loadedDistrict===d?'active':'')+'" data-district="'+esc(d)+'" aria-pressed="'+(state.loadedDistrict===d)+'" '+(state.loadingSchools?'disabled':'')+'>'+esc(d||'전체')+count(d)+'</button>').join('');
+ // 모바일에서는 지역 버튼이 한 줄로 가로 스크롤되므로, 선택이 바뀌면 선택한 버튼을 가운데로 가져온다.
+ const box=$('#districts'),on=box.querySelector('.active');if(on&&centeredDistrict!==state.loadedDistrict&&box.scrollWidth>box.clientWidth){box.scrollLeft+=on.getBoundingClientRect().left-box.getBoundingClientRect().left-(box.clientWidth-on.offsetWidth)/2;centeredDistrict=state.loadedDistrict;}
  $('#district-hint').textContent=state.demo?'데모에서는 가상 학교가 있는 지역만 결과가 표시됩니다.':!regions.length?'학교를 불러오면 지역 버튼이 표시됩니다.':'';
 }
 async function selectDistrict(district){
@@ -139,6 +144,8 @@ async function selectDistrict(district){
  try{localStorage.setItem('district',district);}catch{}
  state.schools=state.allSchools.filter(s=>!district||districtOf(s)===district);
  renderDistricts();
+ // 전체 지역은 학교가 수백 곳이라 첫 조회와 같이 공시 집계만 바로 하고, 일정·학급 편성은 '전체 지역 일정 조회'를 누를 때 불러온다.
+ if(!district&&!state.demo){state.events=[];state.eventsLoaded=false;state.failures=0;notice('전체 지역 '+fmt(state.schools.length)+'개교 · 학사일정은 지역을 고르거나 전체 지역 일정 조회를 눌러 불러옵니다.');render();loadAlrimi(state.schools).then(render,()=>{});return;}
  await loadEvents();
 }
 function notice(text,error=false){$('#notice').textContent=text;$('#notice').classList.toggle('error',error);}
@@ -149,26 +156,114 @@ const eventRules=[['입학·졸업·개학',/입학|졸업|수료|개학|종업|
 const eventType=name=>(eventRules.find(([,re])=>re.test(name||''))||['기타'])[0];
 function stripChart(segments){const live=segments.filter(s=>s.value>0),total=live.reduce((a,s)=>a+s.value,0);if(!total)return '';let x=0;const parts=live.map((s,i)=>{const w=s.value/total*100,el=`<rect class="strip-seg ${esc(s.cls)}" x="${x.toFixed(2)}%" width="${Math.max(0,w-(i<live.length-1?0.7:0)).toFixed(2)}%" height="6" rx="2"><title>${esc(s.label)} ${fmt(s.value)} (${pct(s.value,total)}%)</title></rect>`;x+=w;return el;});return `<div class="strip"><svg width="100%" height="6" aria-hidden="true">${parts.join('')}</svg><ul class="strip-legend">${live.map(s=>`<li><span class="swatch ${esc(s.cls)}"></span>${esc(s.label)} <b>${fmt(s.value)}</b></li>`).join('')}</ul></div>`;}
 function dayStrip(filtered){const y=state.month.getFullYear(),m=state.month.getMonth(),last=new Date(y,m+1,0).getDate(),counts=Array.from({length:last},()=>0);for(const e of filtered){const d=Number(String(e.AA_YMD).slice(6,8));if(d>=1&&d<=last)counts[d-1]++;}const max=Math.max(1,...counts),w=100/last;return `<div class="daystrip"><svg width="100%" height="40" role="img" aria-label="일별 일정 수">${counts.map((c,i)=>{const wd=new Date(y,m,i+1).getDay(),h=c?Math.max(8,c/max*100):0;return `<rect class="day-col${wd===0||wd===6?' weekend':''}${c&&c===max?' is-max':''}" x="${(i*w).toFixed(2)}%" width="${(w-0.4).toFixed(2)}%" y="${(100-h).toFixed(1)}%" height="${h.toFixed(1)}%" rx="1.5"><title>${m+1}월 ${i+1}일 · ${c}건</title></rect>`;}).join('')}</svg><div class="daystrip-axis"><span>1일</span><span>${Math.ceil(last/2)}일</span><span>${last}일</span></div></div>`;}
-function overviewCards(items,filtered){
- if(!items.length)return '';
- const scope=state.loadedDistrict||'전체 지역',ready=state.eventsLoaded||state.demo;
- const kinds=types.slice(1).map(t=>({label:t,value:items.filter(s=>s.SCHUL_KND_SC_NM===t).length,cls:color(t)}));
+// --- 한눈에 보기: 선택한 교육청·관할 지역의 학교를 지표 띠, 학교급·규모·지역·일정 카드로 요약한다.
+// 학생·교원 수(학교알리미 공시 스냅숏)는 지역을 고르지 않아도 바로 집계되고, 일정·학급 편성(NEIS)은 지역을 고르거나 전체 조회를 눌러야 채워진다.
+const smallLimit=()=>officeSummary?.smallSchool||60;
+const dec=v=>v==null?'—':v.toFixed(1);
+const kindLegend=`<ul class="strip-legend">${types.slice(1).map(t=>`<li><span class="swatch ${color(t)}"></span>${t}</li>`).join('')}</ul>`;
+// 학교 묶음 합계. 학급당·교사 1인당 학생은 두 값이 모두 공시된 학교끼리만 나눈다. 소규모 학교는 시도교육청 화면과 같은 기준(학생 60명 이하 초·중·고).
+function agg(list){
+ const r={schools:list.length,students:0,classes:0,teachers:0,nS:0,nC:0,nT:0,pcS:0,pcC:0,ptS:0,ptT:0,small:0,regular:0};
+ for(const s of list){
+  const st=alrimiStats.get(s.SD_SCHUL_CODE),c=classesOf(s);
+  if(c!=null){r.classes+=c;r.nC++;}
+  if(st?.students!=null){r.students+=st.students;r.nS++;if(st.classes){r.pcS+=st.students;r.pcC+=st.classes;}if(st.teachers){r.ptS+=st.students;r.ptT+=st.teachers;}if(s.SCHUL_KND_SC_NM!=='특수학교'){r.regular++;if(st.students<=smallLimit())r.small++;}}
+  if(st?.teachers!=null){r.teachers+=st.teachers;r.nT++;}
+ }
+ return {...r,perClass:r.pcC?r.pcS/r.pcC:null,perTeacher:r.ptT?r.ptS/r.ptT:null};
+}
+const studentsOf=s=>alrimiStats.get(s.SD_SCHUL_CODE)?.students;
+const monthLabel=()=>(state.month.getFullYear()===now.getFullYear()&&state.month.getMonth()===now.getMonth()?'이번 달':(state.month.getMonth()+1)+'월');
+function kpiStrip(items,evList){
+ const own=evList.filter(isSchoolEvent),a=agg(items),ready=state.eventsLoaded&&!state.busy||state.demo,years=[...new Set(items.map(s=>alrimiStats.get(s.SD_SCHUL_CODE)?.year).filter(Boolean))].sort();
+ const cover=n=>n<items.length?` · ${fmt(n)}/${fmt(items.length)}개교`:'';
+ const basis=n=>n?(years.join('·')||'학교알리미')+' 공시'+cover(n):state.demo?'데모에서는 제공하지 않음':alrimiError?'학교알리미 조회 실패':alrimiEnabled()?'학교알리미 공시':'중계 서버 미설정';
+ const neisN=items.filter(s=>classTotal(s)!=null).length;
+ const kinds=types.slice(1).map(t=>[t,items.filter(s=>s.SCHUL_KND_SC_NM===t).length]).filter(([,n])=>n).map(([t,n])=>`<span><i class="swatch ${color(t)}"></i>${t==='특수학교'?'특수':t[0]} ${fmt(n)}</span>`).join('');
+ return [
+  kpiCell('학교',items.length?fmt(items.length):'—','개교',kinds),
+  kpiCell('학생',a.nS?fmt(a.students):'—','명',basis(a.nS)),
+  kpiCell('학급',a.nC?fmt(a.classes):'—','학급',a.nC?(neisN===a.nC?ay()+'학년도 편성':neisN?'학년도 편성·공시':(years.join('·')||'학교알리미')+' 공시')+cover(a.nC):basis(0)),
+  kpiCell('교사',a.nT?fmt(a.teachers):'—','명',basis(a.nT)),
+  kpiCell('학급당 학생',dec(a.perClass),'명',a.perTeacher!=null?`교사 1인당 ${dec(a.perTeacher)}명`:basis(0)),
+  kpiCell(monthLabel()+' 학교 일정',ready?fmt(own.length):'—','건',ready?`${fmt(new Set(own.map(e=>e.SD_SCHUL_CODE)).size)}개교 · 휴일 제외`:state.busy&&state.eventsLoaded?'불러오는 중…':'조회 전')
+ ].join('');
+}
+function overviewCards(items,evList){
+ if(!items.length)return `<article class="chart-card span-12">${chartEmpty(state.loadingSchools||state.busy?'학교 정보를 불러오는 중입니다.':'조회 조건에 맞는 학교가 없습니다.','school')}</article>`;
+ const scope=state.loadedDistrict||'전체 지역',all=agg(items);
+ // 학교급별 현황: 도넛(학교 수) 옆의 규모 표가 범례를 겸한다.
+ const kindRows=types.slice(1).map(t=>{const list=items.filter(s=>s.SCHUL_KND_SC_NM===t);return {t,cls:color(t),n:list.length,a:agg(list)};});
+ const cells=(n,a)=>`<td class="num">${fmt(n)}</td><td class="num">${a.nS?fmt(a.students):'—'}</td><td class="num">${a.nC?fmt(a.classes):'—'}</td><td class="num">${a.nT?fmt(a.teachers):'—'}</td><td class="num">${dec(a.perClass)}</td>`;
+ const kindTable=`<div class="table-wrap"><table class="mini-table"><thead><tr><th>학교급</th><th class="num">학교</th><th class="num">학생</th><th class="num">학급</th><th class="num">교사</th><th class="num">학급당</th></tr></thead><tbody>${kindRows.map(r=>`<tr class="${r.n?'':'is-zero'}"><td><span class="swatch ${r.cls}"></span>${r.t}<small>${r.n?pct(r.n,items.length)+'%':''}</small></td>${cells(r.n,r.a)}</tr>`).join('')}</tbody><tfoot><tr><td>합계</td>${cells(items.length,all)}</tr></tfoot></table></div>`;
  const fond=[['공립','accent'],['국립','accent-2'],['사립','neutral']].map(([f,cls])=>({label:f,value:items.filter(s=>s.FOND_SC_NM===f).length,cls}));
- const composition=chartCard({title:'학교급 구성',caption:scope,body:donutChart({segments:kinds,center:fmt(items.length),sub:'개교',label:'학교급별 학교 수'})+stripChart(fond)});
-const known=items.filter(s=>classesOf(s)!=null),bands=[['6학급 이하',0,6],['7~12학급',7,12],['13~24학급',13,24],['25학급 이상',25,Infinity]];
+ const composition=chartCard({title:'학교급별 현황',caption:scope+(all.nS?' · 학생·교사 학교알리미 공시':''),body:`<div class="kind-split">${donutChart({segments:kindRows.map(r=>({label:r.t,value:r.n,cls:r.cls})),center:fmt(items.length),sub:'개교',label:'학교급별 학교 수',legend:false})}${kindTable}</div>${stripChart(fond)}`,span:7});
+ const known=items.filter(s=>classesOf(s)!=null),bands=[['6학급 이하',0,6],['7~12학급',7,12],['13~24학급',13,24],['25학급 이상',25,Infinity]];
  const sizeRows=bands.map(([label,lo,hi])=>({label,value:known.filter(s=>{const c=classesOf(s);return c>=lo&&c<=hi;}).length}));
- const totalClasses=known.reduce((a,s)=>a+classesOf(s),0),stats=items.map(s=>alrimiStats.get(s.SD_SCHUL_CODE)).filter(Boolean),students=stats.map(x=>x.students).filter(n=>n!=null),perClass=stats.map(x=>x.perClass).filter(n=>n!=null);
- const sizeNote=known.length?`${known.length<items.length?`학급 정보 <b>${fmt(known.length)}</b>/${fmt(items.length)}개교 · `:''}평균 <b>${(totalClasses/known.length).toFixed(1)}</b>학급${students.length?` · 학생 <b>${fmt(students.reduce((a,n)=>a+n,0))}</b>명`:''}${perClass.length?` · 학급당 <b>${(perClass.reduce((a,n)=>a+n,0)/perClass.length).toFixed(1)}</b>명`:''}`:'';
- const size=chartCard({title:'학교 규모 분포',caption:'학급 수 기준',body:known.length?barChart({rows:sizeRows,unit:'개교'}):chartEmpty(state.demo?'데모에서는 학급 정보를 제공하지 않습니다.':'지역을 선택하면 학급 수 기준 규모 분포가 표시됩니다.','layers'),note:sizeNote});
- const counts=new Map();for(const e of filtered){const t=eventType(e.EVENT_NM);counts.set(t,(counts.get(t)||0)+1);}
- const order=[...eventRules.map(r=>r[0]),'기타'];
- const typeRows=order.map(t=>({label:t,value:counts.get(t)||0,muted:t==='기타'})).filter(r=>r.value).sort((a,b)=>(a.label==='기타')-(b.label==='기타')||b.value-a.value);
- const schedule=chartCard({title:'이번 달 일정',caption:ready?`${fmt(filtered.length)}건 · ${fmt(new Set(filtered.map(e=>e.SD_SCHUL_CODE)).size)}개교`:'',body:ready?(typeRows.length?barChart({rows:typeRows,unit:'건'})+dayStrip(filtered):chartEmpty('이번 달 조회된 일정이 없습니다.')):chartEmpty('지역 일정을 조회하면 유형별·일별 분포가 표시됩니다.')});
- let regionCard='';
- if(!state.loadedDistrict&&!state.demo){const byDistrict=new Map();for(const s of items){const d=districtOf(s);byDistrict.set(d,(byDistrict.get(d)||0)+1);}const sorted=[...byDistrict.entries()].sort((a,b)=>b[1]-a[1]);const top=sorted.slice(0,12),rest=sorted.slice(12);const rows=top.map(([label,value])=>({label,value}));if(rest.length)rows.push({label:`기타 ${rest.length}개 지역`,value:rest.reduce((a,[,n])=>a+n,0),muted:true});if(sorted.length>1)regionCard=chartCard({title:'지역별 학교 수',caption:`${sorted.length}개 시·군·구`,body:barChart({rows,unit:'개교',cols:2}),wide:true});}
- let topCard='';
- if(students.length){const ranked=items.filter(s=>alrimiStats.get(s.SD_SCHUL_CODE)?.students!=null).sort((a,b)=>alrimiStats.get(b.SD_SCHUL_CODE).students-alrimiStats.get(a.SD_SCHUL_CODE).students);const top=ranked.slice(0,7),rest=ranked.slice(7);const rows=top.map(s=>({label:s.SCHUL_NM,value:alrimiStats.get(s.SD_SCHUL_CODE).students,cls:color(s.SCHUL_KND_SC_NM),hint:s.SCHUL_KND_SC_NM}));if(rest.length)rows.push({label:`나머지 ${rest.length}개교`,value:rest.reduce((a,s)=>a+alrimiStats.get(s.SD_SCHUL_CODE).students,0),muted:true});topCard=chartCard({title:'학생 수 상위 학교',caption:'학교알리미 공시',body:barChart({rows,unit:'명',cols:rows.length>4?2:1}),note:`<span class="swatch elementary"></span> 초등 <span class="swatch middle"></span> 중 <span class="swatch high"></span> 고 <span class="swatch special"></span> 특수`,wide:true});}
- return composition+size+schedule+regionCard+topCard;
+ // 학생 수 구간은 소규모 학교 기준(특수학교 제외)과 맞춰 초·중·고만 센다.
+ const lim=smallLimit(),regular=items.filter(s=>s.SCHUL_KND_SC_NM!=='특수학교'&&studentsOf(s)!=null),studentBands=[[lim+'명 이하',0,lim],[(lim+1)+'~200명',lim+1,200],['201~600명',201,600],['601명 이상',601,Infinity]];
+ const studentRows=studentBands.map(([label,lo,hi])=>({label,value:regular.filter(s=>studentsOf(s)>=lo&&studentsOf(s)<=hi).length}));
+ const block=(head,body)=>`<div class="sub-block"><p class="sub-head">${head}</p>${body}</div>`;
+ const sizeBody=(known.length?block('학급 수 기준',barChart({rows:sizeRows,unit:'개교'})):chartEmpty(state.demo?'데모에서는 학급 정보를 제공하지 않습니다.':'지역을 선택하면 학급 수 기준 규모 분포가 표시됩니다.','layers'))+(regular.length?block('학생 수 기준 <small>초·중·고</small>',barChart({rows:studentRows,unit:'개교'})):'');
+ const sizeNote=known.length?`${known.length<items.length?`학급 정보 <b>${fmt(known.length)}</b>/${fmt(items.length)}개교 · `:''}평균 <b>${(known.reduce((x,s)=>x+classesOf(s),0)/known.length).toFixed(1)}</b>학급${all.regular?` · 학생 ${lim}명 이하 초·중·고 <b>${pct(all.small,all.regular)}%</b>`:''}`:'';
+ const size=chartCard({title:'학교 규모 분포',caption:'학교 수',body:sizeBody,note:sizeNote,span:5});
+ const ranked=items.filter(s=>studentsOf(s)!=null).length,regional=state.loadedDistrict?(ranked>20?schoolBarsCard(items,8)+smallCard(items,4):schoolBarsCard(items,12)):districtCard(items)+topCard(items)+smallCard(items,6);
+ return composition+size+scheduleCards(evList)+regional;
+}
+// 지역별 현황(전체 지역): 시·군·구마다 학교급 구성 막대(모든 지역 같은 눈금)와 규모 지표. 지역 이름을 누르면 그 지역으로 좁힌다.
+const districtCols=[['name','지역'],['schools','학교'],['students','학생'],['perClass','학급당 학생'],['small','소규모 학교',()=>`학생 ${smallLimit()}명 이하`]];
+function districtCard(items){
+ const map=new Map();for(const s of items){const d=districtOf(s);if(!map.has(d))map.set(d,[]);map.get(d).push(s);}
+ if(map.size<2)return '';
+ const rows=[...map].map(([name,list])=>({name,list,a:agg(list),kinds:types.slice(1).map(t=>[t,list.filter(s=>s.SCHUL_KND_SC_NM===t).length])}));
+ const key=state.districtSort,val={schools:r=>r.list.length,students:r=>r.a.nS?r.a.students:null,perClass:r=>r.a.perClass,small:r=>r.a.regular?r.a.small/r.a.regular:null}[key],byName=(a,b)=>a.name.localeCompare(b.name,'ko');
+ rows.sort(val?(a,b)=>(val(b)??-1)-(val(a)??-1)||byName(a,b):byName);
+ const max=Math.max(1,...rows.map(r=>r.list.length));
+ const bar=r=>{let x=0;return `<svg class="sbar-track" width="100%" height="12" role="img" aria-label="${esc(r.name+' 학교 '+r.list.length+'개: '+r.kinds.map(([t,n])=>t+' '+n).join(', '))}">${r.kinds.map(([t,n])=>{if(!n)return '';const w=n/max*100,el=`<rect class="bar-fill ${color(t)}" x="${x.toFixed(3)}%" width="${w.toFixed(3)}%" height="12" rx="2"><title>${esc(r.name)} · ${t} ${n}개교</title></rect>`;x+=w;return el;}).join('')}</svg>`;};
+ const small=a=>a.regular?`<span class="meter" title="초·중·고 ${a.regular}개교 중 ${a.small}개교 (${pct(a.small,a.regular)}%)"><svg width="44" height="6" aria-hidden="true"><rect class="meter-track" width="100%" height="6" rx="3"/>${a.small?`<rect class="meter-fill" width="${(a.small/a.regular*100).toFixed(1)}%" height="6" rx="3"/>`:''}</svg>${fmt(a.small)}<small>개교</small></span>`:'—';
+ const head=districtCols.map(([k,label,sub])=>`<th class="${k==='name'?'':'num'}"${key===k?` aria-sort="${k==='name'?'ascending':'descending'}"`:''}><button type="button" class="sort-th${key===k?' is-sorted':''}" data-district-sort="${k}">${label}${key===k?(k==='name'?' ↑':' ↓'):''}${sub?`<small>${esc(sub())}</small>`:''}</button></th>`);
+ head.splice(1,0,'<th class="bar-col">학교급 구성</th>');
+ const all=agg(items);
+ const table=`<div class="table-wrap"><table class="district-table"><thead><tr>${head.join('')}</tr></thead><tbody>${rows.map(r=>`<tr><td><button type="button" class="text-button" data-district="${esc(r.name)}" title="${esc(r.name)}만 보기">${esc(r.name)}${icon('next')}</button></td><td class="bar-col">${bar(r)}</td><td class="num"><b>${fmt(r.list.length)}</b></td><td class="num">${r.a.nS?fmt(r.a.students):'—'}</td><td class="num">${dec(r.a.perClass)}</td><td class="num">${small(r.a)}</td></tr>`).join('')}</tbody><tfoot><tr><td>합계<small>${fmt(rows.length)}개 시·군·구</small></td><td class="bar-col"></td><td class="num"><b>${fmt(items.length)}</b></td><td class="num">${all.nS?fmt(all.students):'—'}</td><td class="num">${dec(all.perClass)}</td><td class="num">${small(all)}</td></tr></tfoot></table></div>`;
+ return chartCard({title:'지역별 현황',caption:`${rows.length}개 시·군·구 · 머리글을 누르면 정렬`,body:kindLegend+table,note:'지역 이름을 누르면 그 지역으로 좁혀 학사일정과 학급 편성까지 불러옵니다. 지역은 학교 도로명 주소의 시·군·구 기준입니다.',span:12});
+}
+// 학교별 학생 수(지역 선택 시): 학교 수가 적으니 학교마다 막대 하나. 많으면 상위 20개교만 그리고 나머지는 합계로 적는다.
+function schoolBarsCard(items,span){
+ const ranked=items.filter(s=>studentsOf(s)!=null).sort((a,b)=>studentsOf(b)-studentsOf(a));
+ if(!ranked.length)return '';
+ const top=ranked.slice(0,20),rest=ranked.slice(20);
+ const rows=top.map(s=>({label:s.SCHUL_NM,value:studentsOf(s),cls:color(s.SCHUL_KND_SC_NM),hint:s.SCHUL_KND_SC_NM}));
+ return chartCard({title:'학교별 학생 수',caption:(state.loadedDistrict||'전체 지역')+' · 학교알리미 공시',body:kindLegend+barChart({rows,unit:'명',cols:rows.length>8?2:1}),note:rest.length?`학생 수 상위 ${top.length}개교입니다. 나머지 ${fmt(rest.length)}개교(학생 ${fmt(rest.reduce((x,s)=>x+studentsOf(s),0))}명)는 학교별 현황에서 확인하세요.`:'',span});
+}
+function topCard(items){
+ const ranked=items.filter(s=>studentsOf(s)!=null).sort((a,b)=>studentsOf(b)-studentsOf(a));
+ if(!ranked.length)return '';
+ const rows=ranked.slice(0,8).map(s=>({label:s.SCHUL_NM,value:studentsOf(s),cls:color(s.SCHUL_KND_SC_NM),hint:s.SCHUL_KND_SC_NM+' · '+districtOf(s)}));
+ return chartCard({title:'학생 수 상위 학교',caption:'학교알리미 공시',body:kindLegend+barChart({rows,unit:'명'}),span:6});
+}
+// 소규모 학교: 학생 수가 적은 순서. 특수학교는 시도교육청 화면과 같이 뺀다.
+function smallCard(items,span){
+ if(!items.some(s=>studentsOf(s)!=null))return '';
+ const lim=smallLimit(),list=items.filter(s=>s.SCHUL_KND_SC_NM!=='특수학교'&&studentsOf(s)!=null&&studentsOf(s)<=lim).sort((a,b)=>studentsOf(a)-studentsOf(b)||a.SCHUL_NM.localeCompare(b.SCHUL_NM,'ko'));
+ const shown=list.slice(0,8),where=s=>state.loadedDistrict?townOf(s):districtOf(s);
+ const body=list.length?`<ul class="rank-list">${shown.map(s=>`<li><button type="button" class="text-button" data-school="${esc(s.SD_SCHUL_CODE)}"><span class="swatch ${color(s.SCHUL_KND_SC_NM)}"></span><span>${esc(s.SCHUL_NM)}</span></button><span class="rank-meta">${esc(where(s))}</span><b>${fmt(studentsOf(s))}<small>명</small></b></li>`).join('')}</ul>`:chartEmpty(`학생 ${lim}명 이하인 초·중·고가 없습니다.`,'school');
+ return chartCard({title:'소규모 학교',caption:`학생 ${lim}명 이하 · ${fmt(list.length)}개교`,body,note:list.length>shown.length?`학생 수가 적은 ${shown.length}개교입니다. 나머지 ${fmt(list.length-shown.length)}개교는 학교별 현황 표에서 확인하세요.`:'',span});
+}
+// 일정 카드: 유형·일별 분포와 다가오는 학교 일정(토요휴업일·공휴일 제외). 전체 지역은 학교가 많아 조회 버튼을 누를 때만 불러온다.
+function scheduleCards(evList){
+ const label=monthLabel();
+ if(!state.demo&&(!state.eventsLoaded||state.busy)){
+  const loading=state.eventsLoaded&&state.busy;
+  return `<article class="chart-card span-12 banner">${icon('calendar-check')}<div><strong>${loading?label+' 학사일정을 불러오는 중입니다':label+' 학사일정은 아직 조회하지 않았습니다'}</strong><p>${loading?'학교 수가 많으면 시간이 걸립니다. 위 진행 막대에서 진행 상황을 볼 수 있습니다.':`관할 지역을 고르면 바로 조회되고, 전체 ${fmt(state.schools.length)}개교를 한 번에 조회할 수도 있습니다(시간이 걸릴 수 있습니다).`}</p></div>${loading?'':'<button type="button" class="button primary compact" data-load-all>전체 지역 일정 조회</button>'}</article>`;
+ }
+ const own=evList.filter(isSchoolEvent),counts=new Map();for(const e of own){const t=eventType(e.EVENT_NM);counts.set(t,(counts.get(t)||0)+1);}
+ const typeRows=[...eventRules.map(r=>r[0]),'기타'].map(t=>({label:t,value:counts.get(t)||0,muted:t==='기타'})).filter(r=>r.value).sort((a,b)=>(a.label==='기타')-(b.label==='기타')||b.value-a.value);
+ const types_=chartCard({title:label+' 학교 일정 유형',caption:`${fmt(own.length)}건 · ${fmt(new Set(own.map(e=>e.SD_SCHUL_CODE)).size)}개교`,body:typeRows.length?barChart({rows:typeRows,unit:'건'})+`<p class="sub-head">날짜별 건수</p>`+dayStrip(own):chartEmpty('조회된 학교 일정이 없습니다.'),note:`토요휴업일·국가 공휴일처럼 모든 학교에 같은 일정은 뺐습니다(달력에는 표시). 전체 일정 ${fmt(evList.length)}건.`,span:5});
+ const current=label==='이번 달',today=ymd(now),upcoming=current?own.filter(e=>e.AA_YMD>=today):own,shown=upcoming.slice(0,9);
+ const groups=[];for(const e of shown){const last=groups[groups.length-1];if(last&&last[0]===e.AA_YMD)last[1].push(e);else groups.push([e.AA_YMD,[e]]);}
+ const body=shown.length?`<ol class="agenda">${groups.map(([d,list])=>`<li><time${d===today?' class="is-today"':''}>${shortDate(d)}${d===today?'<em>오늘</em>':''}</time><ul>${list.map(e=>`<li><button type="button" class="agenda-item" data-event="${state.events.indexOf(e)}" title="${esc(e.SCHUL_NM+' · '+e.EVENT_NM)}"><span class="swatch ${color(e.SCHUL_KND_SC_NM)}"></span><b>${esc(e.SCHUL_NM)}</b><span>${esc(e.EVENT_NM)}</span></button></li>`).join('')}</ul></li>`).join('')}</ol>`:chartEmpty(current?'이번 달 남은 학교 일정이 없습니다.':'등록된 학교 일정이 없습니다.');
+ const agenda=chartCard({title:current?'다가오는 학교 일정':label+' 학교 일정',caption:`${fmt(upcoming.length)}건 · 토요휴업일·공휴일 제외`,body,note:`${upcoming.length>shown.length?`외 ${fmt(upcoming.length-shown.length)}건 · `:''}<button type="button" class="link-button" data-view="calendar">학사일정에서 모두 보기</button>`,span:7});
+ return types_+agenda;
 }
 // 카드는 한 번에 boardPage개까지 그리고(전체 지역 수백 개교 대비), 남는 학교가 적으면 한꺼번에 보여 준다.
 const boardPage=120;
@@ -242,7 +337,7 @@ const meter=v=>v==null?'—':`<span class="meter"><svg width="56" height="6" ari
 function officesView(){
  if(!officeSummary)return summaryError?`<div class="empty">${icon('layers')}<strong>자료를 불러오지 못했습니다</strong><p>${esc(summaryError)}</p></div>`:`<div class="empty">${icon('layers')}<p>시도교육청 현황을 불러오는 중…</p></div>`;
  const {rows,nation,years,fetched,smallSchool}=officeSummary,basis=(years.join('·')||'학교알리미')+' 공시';
- const tiles=[['학교 수',fmt(nation.schools),'개교','school',rows.length+'개 시도교육청 · '+basis],['학생 수',fmt(nation.students),'명','users',basis],['학급 수',fmt(nation.classes),'학급','layers',basis],['교사 수',fmt(nation.teachers),'명','teacher',basis]].map(([label,n,unit,name,note])=>`<div class="stat"><div><span class="stat-label">${label}<small>${esc(note)}</small></span><strong>${n}<small>${unit}</small></strong></div><span class="stat-icon">${icon(name)}</span></div>`).join('');
+ const tiles=[['학교',fmt(nation.schools),'개교',rows.length+'개 시도교육청'],['학생',fmt(nation.students),'명',basis],['학급',fmt(nation.classes),'학급',basis],['교사',fmt(nation.teachers),'명',basis],['학급당 학생',dec(nation.perClass),'명',`교사 1인당 ${dec(nation.perTeacher)}명`],['소규모 학교',ratio(nation.smallRate),'',`학생 ${smallSchool}명 이하 초·중·고`]].map(([label,n,unit,note])=>kpiCell(label,n,unit,esc(note))).join('');
  // 학생 수 순위 막대(학교급별 누적). 막대 길이는 모든 시도가 같은 눈금이다.
  const byStudents=[...rows].sort((a,b)=>b.students-a.students),max=Math.max(1,...rows.map(r=>r.students));
  const bars=byStudents.map(r=>{let x=0;const segs=types.slice(1).map(t=>{const v=r.kinds[t];if(!v)return '';const w=v/max*100,el=`<rect class="bar-fill ${color(t)}" x="${x.toFixed(3)}%" width="${w.toFixed(3)}%" height="14" rx="2"><title>${esc(r.name)} · ${t} ${fmt(v)}명 (${pct(v,r.students)}%)</title></rect>`;x+=w;return el;}).join('');
@@ -253,35 +348,39 @@ function officesView(){
  const cells=r=>`<td class="num">${fmt(r.schools)}</td><td class="num">${fmt(r.students)}</td><td class="num">${r.perClass==null?'—':r.perClass.toFixed(1)}</td><td class="num">${r.perTeacher==null?'—':r.perTeacher.toFixed(1)}</td><td class="num">${meter(r.smallRate)}</td><td class="num">${meter(r.entry)}</td>`;
  const table=`<div class="table-wrap"><table class="office-table"><thead><tr>${officeCols.map(([k,label,sub,hint])=>{const text=f=>typeof f==='function'?f(smallSchool):f||'';return `<th class="${k==='name'?'':'num'}"${key===k?` aria-sort="${k==='name'?'ascending':'descending'}"`:''}><button type="button" class="sort-th${key===k?' is-sorted':''}" data-office-sort="${k}"${hint?` title="${esc(text(hint))}"`:''}>${label}${key===k?(k==='name'?' ↑':' ↓'):''}${sub?`<small>${esc(text(sub))}</small>`:''}</button></th>`;}).join('')}<th><span class="sr-only">이동</span></th></tr></thead><tbody>${sorted.map(r=>`<tr class="${r.code===state.loadedOffice&&!state.demo?'is-current':''}"><td><b>${esc(r.name)}</b><small>${esc(r.full)}</small></td>${cells(r)}<td><button type="button" class="button compact" data-office="${r.code}">학교 보기</button></td></tr>`).join('')}</tbody><tfoot><tr><td><b>전국</b><small>${fmt(rows.length)}개 시도교육청</small></td>${cells(nation)}<td></td></tr></tfoot></table></div>`;
  const compare=chartCard({title:'시도교육청 비교',caption:'머리글을 누르면 정렬',body:table,note:`학교 수는 학생이 있는 공시 학교(분교·방송통신중 포함), 학급당·교사 1인당 학생은 시도 합계로 나눈 값입니다. 소규모 학교는 학생 수가 ${smallSchool}명 이하인 초·중·고 비율(특수학교 제외)로, 교육부 적정규모학교 권고기준(면·도서·벽지 60명, 읍 지역 초 120·중고 180명, 도시 지역 초 240·중고 300명 이하)과 다른 단순 기준입니다. 초1 ÷ 초6은 초등 1학년 학생 수를 6학년 학생 수로 나눈 값으로 100%보다 낮을수록 입학생이 줄고 있다는 뜻입니다. 출처: 학교알리미 ${esc(basis)}(${esc(fetched)} 수집).`,wide:true});
- return `<section class="stats">${tiles}</section><div class="overview">${chart}${compare}</div>`;
+ return `<section class="kpis card" aria-label="전국 지표">${tiles}</section><div class="overview">${chart}${compare}</div>`;
+}
+const viewText={overview:['한눈에 보기','관내 학교의 규모와 구성, 이번 달 일정을 한 화면에서 확인하세요.'],schools:['학교별 현황','학교마다 학급·학생·교원 규모와 이번 달 일정을 이어서 확인하세요.'],calendar:['학사일정','관내 학교의 학사일정을 달력과 목록으로 확인하세요.'],offices:['시도교육청 비교','전국 시도교육청의 학교·학생·교원 규모를 학교알리미 공시로 한눈에 비교하세요.']};
+function setHeading(){
+ const [title,subtitle]=viewText[state.view];$('#heading').textContent=title;$('#subtitle').textContent=subtitle;document.title=title+' · 학교모아';
+ document.querySelectorAll('.nav[data-view]').forEach(b=>{const on=b.dataset.view===state.view;b.classList.toggle('active',on);if(on)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
 }
 function renderOffices(){
  if(!officeSummary&&!summaryError)loadSummary();
- $('#scope-summary').textContent='전국 · 시도교육청 비교';
+ $('#scope-summary').textContent='전국 · 17개 시도교육청';
  $('#offices-view').innerHTML=officesView();
- const title='시도교육청 현황';$('#heading').textContent=title;$('#crumb').textContent=title;$('#subtitle').textContent='전국 시도교육청의 학교·학생·교원 규모를 학교알리미 공시로 한눈에 비교하세요.';
- document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===state.view));
+ setHeading();
 }
+const byDate=list=>[...list].sort((a,b)=>a.AA_YMD.localeCompare(b.AA_YMD)||a.SCHUL_NM.localeCompare(b.SCHUL_NM,'ko'));
 function render(){
- const officeView=state.view==='offices';
- for(const sel of ['.scope','.status-row','#stats','#overview','#surface'])$(sel).hidden=officeView;
+ const officeView=state.view==='offices',overview=state.view==='overview';
+ for(const sel of ['.scope','.status-row'])$(sel).hidden=officeView;
+ $('#progress').hidden=officeView||!state.busy;
+ $('#stats').hidden=!overview;$('#overview').hidden=!overview;$('#surface').hidden=officeView||overview;
  $('#offices-view').hidden=!officeView;
  if(officeView){renderOffices();return;}
  renderDistricts();
- const filtered=events();
+ setHeading();
  $('#scope-summary').textContent=(state.demo?'데모 · ': '')+offices[state.loadedOffice].replace('교육청','')+' / '+(state.loadedDistrict||'전체 지역');
- $('#load-schedules').hidden=state.eventsLoaded||state.busy||state.demo;
+ $('#load-schedules').hidden=overview||state.eventsLoaded||state.busy||state.demo;
  $('#load-schedules').textContent=state.view==='schools'?'전체 지역 현황 조회':'전체 지역 일정 조회';
- const items=schools(),known=items.filter(s=>classesOf(s)!=null),neisClasses=items.filter(s=>classTotal(s)!=null).length,withStudents=items.filter(s=>alrimiStats.get(s.SD_SCHUL_CODE)?.students!=null),withTeachers=items.filter(s=>alrimiStats.get(s.SD_SCHUL_CODE)?.teachers!=null);
- const sum=(list,f)=>fmt(list.reduce((a,s)=>a+(f(s)||0),0)),coverage=list=>list.length<items.length?` · ${fmt(list.length)}/${fmt(items.length)}개교`:'';
- const years=[...new Set(withStudents.map(s=>alrimiStats.get(s.SD_SCHUL_CODE).year).filter(Boolean))].sort();
- const disclosure=list=>list.length?(years.length?years.join('·')+' 공시':'학교알리미 공시')+coverage(list):alrimiError?'학교알리미 조회 실패':alrimiEnabled()?'학교알리미 공시':'중계 서버 미설정';
- $('#stats').innerHTML=[['학생 수',withStudents.length?sum(withStudents,s=>alrimiStats.get(s.SD_SCHUL_CODE).students):'—','명','users',disclosure(withStudents)],['학급 수',known.length?sum(known,classesOf):'—','학급','layers',(neisClasses===known.length?ay()+'학년도 편성':neisClasses?'학년도 편성·공시':(years.join('·')||'학교알리미')+' 공시')+coverage(known)],['교사 수',withTeachers.length?sum(withTeachers,s=>alrimiStats.get(s.SD_SCHUL_CODE).teachers):'—','명','teacher',disclosure(withTeachers)],['이번 달 일정',state.eventsLoaded||state.demo?fmt(filtered.length):'—','건','calendar-check',state.eventsLoaded||state.demo?`등록 ${fmt(new Set(filtered.map(e=>e.SD_SCHUL_CODE)).size)}개교`:'']].map(([label,n,unit,name,note])=>`<div class="stat"><div><span class="stat-label">${label}${note?`<small>${note}</small>`:''}</span><strong>${n}<small>${unit}</small></strong></div><span class="stat-icon">${icon(name)}</span></div>`).join('');
- $('#overview').innerHTML=state.view==='schools'?'':overviewCards(items,filtered);
- $('#types').innerHTML=types.map(t=>`<button class="chip ${state.type===t?'active':''}" data-type="${t}" aria-pressed="${state.type===t}">${t}<span class="chip-count">${state.schools.filter(s=>t==='전체'||s.SCHUL_KND_SC_NM===t).length}</span></button>`).join('');
+ $('#source').textContent=state.demo?'데모 · 가상 학교 및 일정':'NEIS · '+offices[state.loadedOffice];$('#source').classList.toggle('live',!state.demo);
+ // 한눈에 보기는 학교급·검색 필터와 관계없이 선택한 지역 전체를 요약한다(필터는 아래 두 화면에만 보인다).
+ if(overview){const evAll=byDate(state.events);$('#stats').innerHTML=kpiStrip(state.schools,evAll);$('#overview').innerHTML=overviewCards(state.schools,evAll);return;}
+ const filtered=events(),items=schools();
+ $('#types').innerHTML=types.map(t=>`<button class="chip ${state.type===t?'active':''}" data-type="${t}" aria-pressed="${state.type===t}">${t==='전체'?'':`<span class="swatch ${color(t)}"></span>`}${t}<span class="chip-count">${state.schools.filter(s=>t==='전체'||s.SCHUL_KND_SC_NM===t).length}</span></button>`).join('');
  $('#month-title').textContent=`${state.month.getFullYear()}년 ${state.month.getMonth()+1}월`;
  $('#event-count').textContent=`${state.failures?'일부 학교 미조회 · ':''}조회된 일정 ${filtered.length}건`;
- $('#source').textContent=state.demo?'데모 · 가상 학교 및 일정':'NEIS · '+offices[state.loadedOffice];$('#source').classList.toggle('live',!state.demo);
  const first=new Date(state.month); first.setDate(1-first.getDay());
  const cells=Math.ceil((state.month.getDay()+new Date(state.month.getFullYear(),state.month.getMonth()+1,0).getDate())/7)*7;
  const awaiting=!state.eventsLoaded&&!state.demo;
@@ -299,8 +398,6 @@ function render(){
   $('#school-list').innerHTML=items.length?schoolBoard(items):'<div class="empty">'+icon('school')+'조회 조건에 맞는 학교가 없습니다.</div>';
  }
  $('#calendar-view').hidden=state.view!=='calendar';$('#schools-view').hidden=state.view!=='schools';
- const title=state.view==='calendar'?'관내 학사일정':'학교별 현황';$('#heading').textContent=title;$('#crumb').textContent=title;$('#subtitle').textContent=state.view==='calendar'?'학교의 주요 일정을 한곳에서 확인하세요.':'학교마다 학급·학생·교원 규모와 이번 달 일정을 이어서 확인하세요.';
- document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===state.view));
 }
 function eventTable(items){return items.length?`<div class="table-wrap"><table><thead><tr><th>일자</th><th>학교</th><th>일정</th></tr></thead><tbody>${items.map(e=>`<tr><td>${pretty(e.AA_YMD)}</td><td><button class="text-button" data-school="${esc(e.SD_SCHUL_CODE)}">${esc(e.SCHUL_NM)}</button><small>${esc(e.SCHUL_KND_SC_NM)}</small></td><td><button class="text-button" data-event="${state.events.indexOf(e)}">${esc(e.EVENT_NM)}</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">'+icon('calendar')+'조회된 일정이 없습니다.<br>다른 달이나 학교급을 선택해 보세요.</div>';}
 function showDetail(html){$('#detail-body').innerHTML=html;if(!$('#detail').open)$('#detail').showModal();}
@@ -318,7 +415,7 @@ async function api(endpoint,params,signal){
  }
  const r=await fetch('api/'+endpoint+'?'+new URLSearchParams(params),{signal});const data=await r.json();if(!r.ok)throw new Error(data.error||'조회에 실패했습니다.');return data.rows;
 }
-function busy(value){state.busy=value;['#load','#office','#export'].forEach(s=>$(s).disabled=value);$('#load').textContent=value?'불러오는 중…':'새로고침';$('#progress').hidden=!value;$('#load-schedules').hidden=value||state.eventsLoaded||state.demo;$('#surface').setAttribute('aria-busy',String(value));renderDistricts();}
+function busy(value){state.busy=value;['#load','#office','#export'].forEach(s=>$(s).disabled=value);$('#load').textContent=value?'불러오는 중…':'새로고침';$('#progress').hidden=!value;$('#load-schedules').hidden=value||state.eventsLoaded||state.demo||state.view==='overview';$('#surface').setAttribute('aria-busy',String(value));renderDistricts();}
 async function loadEvents(){
  if(state.loadingSchools)return;
  scheduleController?.abort();const controller=new AbortController();scheduleController=controller;
@@ -327,7 +424,7 @@ async function loadEvents(){
  const selected=[...state.schools];state.events=[];state.failures=0;busy(true);render();
  const start=ymd(state.month),end=ymd(new Date(state.month.getFullYear(),state.month.getMonth()+1,0));const results=[];let cursor=0,done=0,failures=0;
  notice('학교 일정과 학급·학생·교원 정보를 불러오고 있습니다. 지역을 선택하면 조회 범위를 바꿀 수 있습니다.');
- const alrimiTask=loadAlrimi(selected,controller.signal).catch(()=>{});
+ const alrimiTask=loadAlrimi(selected,controller.signal).then(()=>{if(revision===state.revision&&state.busy)render();}).catch(()=>{});
  await Promise.all(Array.from({length:Math.min(5,selected.length)},async()=>{while(cursor<selected.length&&!controller.signal.aborted){const school=selected[cursor++];const cacheKey=school.ATPT_OFCDC_SC_CODE+school.SD_SCHUL_CODE+start;try{let rows=eventCache.get(cacheKey);if(!rows){rows=await api('SchoolSchedule',{ATPT_OFCDC_SC_CODE:school.ATPT_OFCDC_SC_CODE,SD_SCHUL_CODE:school.SD_SCHUL_CODE,AA_FROM_YMD:start,AA_TO_YMD:end},controller.signal);eventCache.set(cacheKey,rows);}results.push(...rows.map(e=>({...e,SCHUL_KND_SC_NM:school.SCHUL_KND_SC_NM})));}catch(error){if(error.name==='AbortError')return;failures++;}try{await loadClassesFor(school,controller.signal);}catch(error){if(error.name==='AbortError')return;}done++;if(revision===state.revision){$('#progress').value=done/selected.length;notice('일정·학급 정보 취합 중 · '+done+' / '+selected.length+'개교');}}}));
  if(revision!==state.revision)return;
  state.events=results;state.failures=failures;busy(false);render();
@@ -349,7 +446,7 @@ async function loadSchools(){
 }
 function startDemo(){state.revision++;state.demo=true;state.loadedOffice='K10';state.loadedDistrict='';$('#office').value='K10';state.allSchools=demoSchools();state.schools=state.allSchools;state.events=demoEvents();state.failures=0;busy(false);notice('데모 모드 · 아래 학교명과 일정은 모두 가상 자료입니다. 실제 학교 정보는 인증키 연결 후 조회하세요.');render();}
 function csvCell(v){let value=String(v??'');if(/^[\s]*[=+@-]/.test(value))value="'"+value;return '"'+value.replace(/"/g,'""')+'"';}
-function download(){if(state.view==='offices'){if(!officeSummary){notice('내려받을 자료가 없습니다.');return;}const cols=['시도교육청','학교','학생','학급','교사','학급당 학생','교사 1인당 학생',`소규모 학교 비율(학생 ${officeSummary.smallSchool}명 이하, %)`,'초1÷초6(%)'],line=r=>[r.full,r.schools,r.students,r.classes,r.teachers,r.perClass?.toFixed(1),r.perTeacher?.toFixed(1),r.smallRate==null?'':(r.smallRate*100).toFixed(1),r.entry==null?'':(r.entry*100).toFixed(1)];const text='\uFEFF'+[cols,...officeSummary.rows.map(line),line(officeSummary.nation)].map(row=>row.map(csvCell).join(',')).join('\r\n');const link=document.createElement('a');link.href=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8;'}));link.download=`시도교육청현황_${officeSummary.years.join('-')}공시.csv`;link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);return;}const list=state.view==='schools'?schools().map(s=>({...s,CLASS_COUNT:classesOf(s)??'',STUDENTS:alrimiStats.get(s.SD_SCHUL_CODE)?.students??'',TEACHERS:alrimiStats.get(s.SD_SCHUL_CODE)?.teachers??''})):events();if(!list.length){notice('내려받을 자료가 없습니다.');return;}const cols=state.view==='schools'?{SCHUL_NM:'학교명',SCHUL_KND_SC_NM:'학교급',CLASS_COUNT:'학급수',STUDENTS:'학생수',TEACHERS:'교사수',FOND_SC_NM:'설립',JU_ORG_NM:'관할',ORG_RDNMA:'주소',ORG_TELNO:'전화',ORG_FAXNO:'팩스',HMPG_ADRES:'홈페이지',SD_SCHUL_CODE:'학교코드'}:{AA_YMD:'날짜',SCHUL_NM:'학교명',SCHUL_KND_SC_NM:'학교급',EVENT_NM:'일정명',EVENT_CNTNT:'내용'};const text='\uFEFF'+[Object.values(cols),...list.map(x=>Object.keys(cols).map(k=>x[k]))].map(row=>row.map(csvCell).join(',')).join('\r\n');const link=document.createElement('a');link.href=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8;'}));link.download=`${state.demo?'데모_':state.failures?'일부결과_':''}${state.view==='schools'?'학교정보':'학사일정'}_${ymd(state.month).slice(0,6)}.csv`;link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);}
+function download(){if(state.view==='offices'){if(!officeSummary){notice('내려받을 자료가 없습니다.');return;}const cols=['시도교육청','학교','학생','학급','교사','학급당 학생','교사 1인당 학생',`소규모 학교 비율(학생 ${officeSummary.smallSchool}명 이하, %)`,'초1÷초6(%)'],line=r=>[r.full,r.schools,r.students,r.classes,r.teachers,r.perClass?.toFixed(1),r.perTeacher?.toFixed(1),r.smallRate==null?'':(r.smallRate*100).toFixed(1),r.entry==null?'':(r.entry*100).toFixed(1)];const text='\uFEFF'+[cols,...officeSummary.rows.map(line),line(officeSummary.nation)].map(row=>row.map(csvCell).join(',')).join('\r\n');const link=document.createElement('a');link.href=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8;'}));link.download=`시도교육청현황_${officeSummary.years.join('-')}공시.csv`;link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);return;}const calendarView=state.view==='calendar',list=!calendarView?(state.view==='schools'?schools():state.schools).map(s=>({...s,CLASS_COUNT:classesOf(s)??'',STUDENTS:alrimiStats.get(s.SD_SCHUL_CODE)?.students??'',TEACHERS:alrimiStats.get(s.SD_SCHUL_CODE)?.teachers??''})):events();if(!list.length){notice('내려받을 자료가 없습니다.');return;}const cols=!calendarView?{SCHUL_NM:'학교명',SCHUL_KND_SC_NM:'학교급',CLASS_COUNT:'학급수',STUDENTS:'학생수',TEACHERS:'교사수',FOND_SC_NM:'설립',JU_ORG_NM:'관할',ORG_RDNMA:'주소',ORG_TELNO:'전화',ORG_FAXNO:'팩스',HMPG_ADRES:'홈페이지',SD_SCHUL_CODE:'학교코드'}:{AA_YMD:'날짜',SCHUL_NM:'학교명',SCHUL_KND_SC_NM:'학교급',EVENT_NM:'일정명',EVENT_CNTNT:'내용'};const text='\uFEFF'+[Object.values(cols),...list.map(x=>Object.keys(cols).map(k=>x[k]))].map(row=>row.map(csvCell).join(',')).join('\r\n');const link=document.createElement('a');link.href=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8;'}));link.download=`${state.demo?'데모_':state.failures?'일부결과_':''}${calendarView?'학사일정':'학교정보'}_${ymd(state.month).slice(0,6)}.csv`;link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);}
 $('#load').onclick=loadSchools;
 $('#load-schedules').onclick=loadEvents;
 $('#office').onchange=loadSchools;
@@ -363,13 +460,14 @@ $('#grid-btn').onclick=()=>{state.list=false;render();};$('#list-btn').onclick=(
 function dayDetail(ds){showDetail(`<p class="eyebrow">DAILY SCHEDULE</p><h2>${pretty(ds)} 일정</h2>${eventTable(events().filter(x=>x.AA_YMD===ds))}`);}
 document.addEventListener('click',async e=>{
  const b=e.target.closest('button');if(!b){const day=e.target.closest('.day[data-date]');if(day)dayDetail(day.dataset.date);return;}
- if(b.hasAttribute('data-district'))await selectDistrict(b.dataset.district);
+ if(b.hasAttribute('data-district')){if(b.closest('#overview'))window.scrollTo({top:0,behavior:'smooth'});await selectDistrict(b.dataset.district);}
  if(b.hasAttribute('data-load-all'))await loadEvents();
  if(b.dataset.loadAlrimi){const s=state.schools.find(x=>x.SD_SCHUL_CODE===b.dataset.loadAlrimi);if(!s)return;b.disabled=true;b.textContent='불러오는 중…';await loadAlrimi([s],undefined,true).catch(()=>{});schoolDetail(s.SD_SCHUL_CODE);render();}
  if(b.dataset.loadClasses){const s=state.schools.find(x=>x.SD_SCHUL_CODE===b.dataset.loadClasses);if(!s)return;b.disabled=true;b.textContent='불러오는 중…';try{await loadClassesFor(s);schoolDetail(s.SD_SCHUL_CODE);render();}catch(error){b.disabled=false;b.textContent='다시 시도';notice(error.message,true);}}
  if(b.hasAttribute('data-close'))b.closest('dialog').close();
  if(b.dataset.type){state.type=b.dataset.type;state.cardLimit=boardPage;render();}
- if(b.dataset.view){state.view=b.dataset.view;state.cardLimit=boardPage;render();}
+ if(b.dataset.view){state.view=b.dataset.view;state.cardLimit=boardPage;window.scrollTo(0,0);render();}
+ if(b.dataset.districtSort){state.districtSort=b.dataset.districtSort;render();}
  if(b.dataset.layout){state.schoolLayout=b.dataset.layout;try{localStorage.setItem('schoolLayout',state.schoolLayout);}catch{}render();}
  if(b.hasAttribute('data-more-schools')){state.cardLimit+=boardPage;render();}
  if(b.dataset.officeSort){state.officeSort=b.dataset.officeSort;render();}
