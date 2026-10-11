@@ -578,6 +578,8 @@ dialog table{min-width:480px}
 .map-label{fill:var(--ink-2);font-weight:700;letter-spacing:-.2px;text-anchor:middle;dominant-baseline:middle;paint-order:stroke;stroke:rgba(255,255,255,.92);stroke-linejoin:round;pointer-events:none}
 .map-label.is-dim{opacity:.55}
 .map-school-label{fill:var(--ink);font-weight:700;letter-spacing:-.3px;dominant-baseline:middle;paint-order:stroke;stroke:rgba(255,255,255,.94);stroke-linejoin:round;pointer-events:none}
+.map-leader{stroke:var(--ink-2);stroke-width:1px;opacity:.75}
+.map-leader-halo{stroke:#fff;stroke-width:3px;stroke-linecap:round;opacity:.7}
 .map-inset rect{fill:none;stroke:var(--data-2);stroke-width:1px;stroke-dasharray:4 3;vector-effect:non-scaling-stroke}
 .map-inset text{fill:var(--muted);font-weight:600;text-anchor:middle}
 .map-overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}

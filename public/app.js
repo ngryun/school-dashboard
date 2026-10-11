@@ -528,8 +528,8 @@ function applyMapView(svg){
  drawMapLabels(svg,wrap.querySelector('.map-overlay'),v.w<=v.base.w/3);
 }
 // 덧층에 지역 이름과 학교 이름표를 그린다. 지도 좌표 → 덧층 px는 지도 SVG의 화면 변환(getScreenCTM)으로 바꾼다.
-// 학교 이름표는 지역을 골랐거나 교육청 전체에서 3배 넘게 확대했을 때만(deep), 점 오른쪽(안 되면 왼쪽)에 놓고 이미 놓인 이름표·다른 점·지역 이름과 겹치거나
-// 지도 밖으로 나가면 생략한다. 확대할수록 더 많은 학교 이름이 보인다.
+// 학교 이름표는 지역을 골랐거나 교육청 전체에서 3배 넘게 확대했을 때만(deep), 점 바로 옆에 놓고, 자리가 없으면 조금 떨어진 빈 곳에 놓아
+// 지시선으로 잇는다. 이미 놓인 이름표·다른 점·지역 이름과 겹치거나 지도 밖으로 나가면 생략하므로 확대할수록 더 많은 학교 이름이 보인다.
 function drawMapLabels(svg,overlay,deep){
  const m=svg.getScreenCTM();if(!overlay||!m)return;
  const wr=overlay.getBoundingClientRect(),P=(x,y)=>[m.a*x+m.c*y+m.e-wr.left,m.b*x+m.d*y+m.f-wr.top],v=mapView,[L,T]=P(v.x,v.y),[R,B]=P(v.x+v.w,v.y+v.h);
@@ -541,16 +541,39 @@ function drawMapLabels(svg,overlay,deep){
  if(mapLabels.schools.length&&(svg.dataset.focus||deep)){
   // 장애물: 보이는 점(조금 줄인 상자).
   for(const c of svg.querySelectorAll('.map-dot')){const [x,y]=P(+c.getAttribute('cx'),+c.getAttribute('cy')),r=c.dataset.px*.8;if(x>=L&&x<=R&&y>=T&&y<=B)blocks.push([x-r,y-r,x+r,y+r]);}
-  const placed=[];
+  const placed=[],leaders=[],pending=[],inside=b=>b[0]>=L+2&&b[2]<=R-2&&b[1]>=T+2&&b[3]<=B-2,free=b=>inside(b)&&!placed.some(p=>hit(p,b))&&!blocks.some(p=>hit(p,b));
+  const label=(name,x,y,anchor)=>`<text class="map-school-label" x="${n(x)}" y="${n(y)}" text-anchor="${anchor}" font-size="${fs}" stroke-width="3">${esc(name)}</text>`;
+  // 1차: 점 바로 옆(오른쪽, 안 되면 왼쪽). 큰 학교부터.
   for(const s of mapLabels.schools){
    const [x,y]=P(s.x,s.y);if(x<L||x>R||y<T||y>B)continue;
-   const w=s.name.length*fs*.95+2;
+   const w=s.name.length*fs*.95+2;let done=false;
    for(const side of [1,-1]){
     const x0=side>0?x+s.px+3:x-s.px-3-w,box=[x0,y-lh/2,x0+w,y+lh/2];
-    if(box[0]<L+2||box[2]>R-2||box[1]<T+2||box[3]>B-2||placed.some(b=>hit(b,box))||blocks.some(b=>hit(b,box)))continue;
-    placed.push(box);out.push(`<text class="map-school-label" x="${n(side>0?x+s.px+3:x-s.px-3)}" y="${n(y)}" text-anchor="${side>0?'start':'end'}" font-size="${fs}" stroke-width="3">${esc(s.name)}</text>`);break;
+    if(!free(box))continue;
+    placed.push(box);out.push(label(s.name,side>0?x+s.px+3:x-s.px-3,y,side>0?'start':'end'));done=true;break;
+   }
+   if(!done)pending.push({s,x,y,w});
+  }
+  // 2차: 옆자리가 없던 학교는 조금 떨어진 빈 곳(26·44·64px, 12방향)에 놓고 지시선으로 잇는다.
+  // 지시선이 다른 이름표·점을 가로지르는 자리는 쓰지 않고, 그은 선 위에는 다른 이름표를 놓지 않는다.
+  const angles=[0,180,-35,35,145,-145,-65,65,115,-115,-90,90].map(d=>d*Math.PI/180);
+  const crosses=(x1,y1,x2,y2)=>{for(let t=.12;t<=1;t+=.11){const px=x1+(x2-x1)*t,py=y1+(y2-y1)*t,b=[px-1,py-1,px+1,py+1];if(placed.some(p=>hit(p,b))||blocks.some(p=>hit(p,b)))return true;}return false;};
+  for(const {s,x,y,w} of pending){
+   let done=false;
+   for(const d of [26,44,64]){
+    for(const a of angles){
+     const cos=Math.cos(a),sin=Math.sin(a),ex=x+cos*(s.px+d),ey=y+sin*(s.px+d),side=cos>.3?1:cos<-.3?-1:0;
+     const x0=side>0?ex+2:side<0?ex-2-w:ex-w/2,y0=side?ey-lh/2:sin>0?ey:ey-lh,box=[x0,y0,x0+w,y0+lh];
+     const sx=x+cos*s.px,sy=y+sin*s.px;
+     if(!free(box)||crosses(sx,sy,ex,ey))continue;
+     placed.push(box);leaders.push(`<line class="map-leader-halo" x1="${n(sx)}" y1="${n(sy)}" x2="${n(ex)}" y2="${n(ey)}"/><line class="map-leader" x1="${n(sx)}" y1="${n(sy)}" x2="${n(ex)}" y2="${n(ey)}"/>`);
+     for(let t=.12;t<=1;t+=.11){const px=sx+(ex-sx)*t,py=sy+(ey-sy)*t;blocks.push([px-1.5,py-1.5,px+1.5,py+1.5]);}
+     out.push(label(s.name,side>0?ex+2:side<0?ex-2:ex,y0+lh/2,side>0?'start':side<0?'end':'middle'));done=true;break;
+    }
+    if(done)break;
    }
   }
+  out.unshift(...leaders);// 선은 이름표 아래에 깐다.
  }
  overlay.innerHTML=out.join('');
 }
