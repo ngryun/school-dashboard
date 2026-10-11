@@ -603,8 +603,15 @@ dialog table{min-width:480px}
 .map-swatch.q-na{background:var(--surface-3)}.map-swatch.q-flat{background:#e1e6ee}
 .map-rank .text-button{gap:8px}
 /* 지도 아래 전체 폭 카드의 목록은 폭에 따라 여러 단으로 나눈다(휴대폰은 한 단). */
-.rank-list.map-list{grid-template-columns:repeat(auto-fill,minmax(260px,1fr));column-gap:32px}
+.rank-list.map-list,.rank-list.wide{grid-template-columns:repeat(auto-fill,minmax(260px,1fr));column-gap:32px}
 .chart-card .facts{margin:0}
+.map-export{display:flex;gap:6px;margin-left:auto}
+.map-export .i{width:14px;height:14px}
+@media(max-width:760px){.map-export .button{min-height:40px}}
+/* 한눈에 보기의 작은 지도: 카드가 한 줄을 다 차지하는 좁은 화면에서도 너무 커지지 않게 높이를 묶는다. */
+.mini-map{margin:0}
+.mini-map .map-svg{max-height:340px}
+
 
 /* ===== 반응형 ===== */
 @media(min-width:1500px){.day{min-height:148px}}

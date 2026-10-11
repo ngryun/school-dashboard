@@ -224,7 +224,9 @@ function overviewCards(items,evList){
  const sizeBody=(known.length?block('학급 수 기준',barChart({rows:sizeRows,unit:'개교',max:sizeTop})):chartEmpty(state.demo?'데모에서는 학급 정보를 제공하지 않습니다.':'지역을 선택하면 학급 수 기준 규모 분포가 표시됩니다.','layers'))+(regular.length?block('학생 수 기준 <small>초·중·고</small>',barChart({rows:studentRows,unit:'개교',max:sizeTop})):'');
  const sizeNote=known.length?`${known.length<items.length?`학급 정보 <b>${fmt(known.length)}</b>/${fmt(items.length)}개교 · `:''}평균 <b>${(known.reduce((x,s)=>x+classesOf(s),0)/known.length).toFixed(1)}</b>학급${all.regular?` · 학생 ${lim}명 이하 초·중·고 <b>${pct(all.small,all.regular)}%</b>`:''}`:'';
  const size=chartCard({title:'학교 규모 분포',caption:'학교 수',body:sizeBody,note:sizeNote,span:5});
- const ranked=items.filter(s=>studentsOf(s)!=null).length,regional=state.loadedDistrict?(ranked>20?schoolBarsCard(items,8)+smallCard(items,4):schoolBarsCard(items,12)):districtCard(items)+topCard(items)+smallCard(items,6);
+ // 작은 학교 지도는 지역 선택 시 학교별 학생 수 옆에(학교가 많으면 소규모 학교는 아래 넓은 카드로), 전체 지역에서는 상위·소규모 학교와 한 줄에 둔다.
+ const ranked=items.filter(s=>studentsOf(s)!=null).length,map=span=>miniMapCard(items,ranked?span:12);
+ const regional=state.loadedDistrict?map(4)+schoolBarsCard(items,8)+(ranked>20?smallCard(items,12):''):districtCard(items)+map(4)+topCard(items,4)+smallCard(items,4);
  return composition+size+scheduleCards(evList)+regional;
 }
 // 지역별 현황(전체 지역): 시·군·구마다 학교급 구성 막대(모든 지역 같은 눈금)와 규모 지표. 지역 이름을 누르면 그 지역으로 좁힌다.
@@ -253,18 +255,18 @@ function schoolBarsCard(items,span){
  const rows=top.map(s=>({label:s.SCHUL_NM,value:studentsOf(s),cls:color(s.SCHUL_KND_SC_NM),hint:s.SCHUL_KND_SC_NM}));
  return chartCard({title:'학교별 학생 수',caption:(state.loadedDistrict||'전체 지역')+' · 학교알리미 공시',body:kindLegendFor(ranked.map(s=>color(s.SCHUL_KND_SC_NM)))+barChart({rows,unit:'명',cols:rows.length>8?2:1}),note:rest.length?`학생 수 상위 ${top.length}개교입니다. 나머지 ${fmt(rest.length)}개교(학생 ${fmt(rest.reduce((x,s)=>x+studentsOf(s),0))}명)는 학교별 현황에서 확인하세요.`:'',span});
 }
-function topCard(items){
+function topCard(items,span=6){
  const ranked=items.filter(s=>studentsOf(s)!=null).sort((a,b)=>studentsOf(b)-studentsOf(a));
  if(!ranked.length)return '';
  const rows=ranked.slice(0,8).map(s=>({label:s.SCHUL_NM,value:studentsOf(s),cls:color(s.SCHUL_KND_SC_NM),hint:s.SCHUL_KND_SC_NM+' · '+districtOf(s)}));
- return chartCard({title:'학생 수 상위 학교',caption:'학교알리미 공시',body:kindLegendFor(rows.map(r=>r.cls))+barChart({rows,unit:'명'}),span:6});
+ return chartCard({title:'학생 수 상위 학교',caption:'학교알리미 공시',body:kindLegendFor(rows.map(r=>r.cls))+barChart({rows,unit:'명'}),span});
 }
 // 소규모 학교: 학생 수가 적은 순서. 특수학교는 시도교육청 화면과 같이 뺀다.
 function smallCard(items,span){
  if(!items.some(s=>studentsOf(s)!=null))return '';
  const lim=smallLimit(),list=items.filter(s=>s.SCHUL_KND_SC_NM!=='특수학교'&&studentsOf(s)!=null&&studentsOf(s)<=lim).sort((a,b)=>studentsOf(a)-studentsOf(b)||a.SCHUL_NM.localeCompare(b.SCHUL_NM,'ko'));
  const shown=list.slice(0,8),where=s=>state.loadedDistrict?townOf(s):districtOf(s);
- const body=list.length?`<ul class="rank-list">${shown.map(s=>`<li><button type="button" class="text-button" data-school="${esc(s.SD_SCHUL_CODE)}"><span class="swatch ${color(s.SCHUL_KND_SC_NM)}"></span><span>${esc(s.SCHUL_NM)}</span></button><span class="rank-meta">${esc(where(s))}</span><b>${fmt(studentsOf(s))}<small>명</small></b></li>`).join('')}</ul>`:chartEmpty(`학생 ${lim}명 이하인 초·중·고가 없습니다.`,'school');
+ const body=list.length?`<ul class="rank-list${span===12?' wide':''}">${shown.map(s=>`<li><button type="button" class="text-button" data-school="${esc(s.SD_SCHUL_CODE)}"><span class="swatch ${color(s.SCHUL_KND_SC_NM)}"></span><span>${esc(s.SCHUL_NM)}</span></button><span class="rank-meta">${esc(where(s))}</span><b>${fmt(studentsOf(s))}<small>명</small></b></li>`).join('')}</ul>`:chartEmpty(`학생 ${lim}명 이하인 초·중·고가 없습니다.`,'school');
  return chartCard({title:'소규모 학교',caption:`학생 ${lim}명 이하 · ${fmt(list.length)}개교`,body,note:list.length>shown.length?`학생 수가 적은 ${shown.length}개교입니다. 나머지 ${fmt(list.length-shown.length)}개교는 학교별 현황 표에서 확인하세요.`:'',span});
 }
 // 일정 카드: 유형·일별 분포와 다가오는 학교 일정(토요휴업일·공휴일 제외). 전체 지역은 학교가 많아 조회 버튼을 누를 때만 불러온다.
@@ -428,19 +430,22 @@ function ensureAllAlrimi(){
 state.mapMetric='students';state.mapHide=new Set();
 const geoFiles=new Map();
 const geoFile=name=>{if(!geoFiles.has(name))geoFiles.set(name,fetch('geo/'+name).then(r=>{if(!r.ok)throw new Error(name);return r.json();}).catch(error=>{geoFiles.delete(name);throw error;}));return geoFiles.get(name);};
-let mapData=null,mapError='',mapLoading='',mapPx=720,mapView=null,mapLabels={districts:[],schools:[],towns:[]};
+// mapFailed: 지도 자료를 받지 못한 교육청. 다시 그릴 때마다 재요청하지 않도록(새로고침해야 다시 받는다) 기억한다.
+// mapExportInfo: 마지막으로 그린 학교 지도의 제목·부제·출처·파일 이름(내보내기에 쓴다).
+let mapExportInfo=null;
+let mapData=null,mapError='',mapLoading='',mapFailed='',mapPx=720,mapView=null,mapLabels={districts:[],schools:[],towns:[]};
 // 읍·면 경계(geo/<교육청>-towns.json)는 지역을 골랐을 때만 받는다. 교육청 코드 → {towns:{시·군·구:[{name,d,lx,ly}]}}.
 const mapTowns=new Map();
 function townsFor(office){if(!mapTowns.has(office)){mapTowns.set(office,null);geoFile(office+'-towns.json').then(d=>d,()=>({towns:{}})).then(d=>{mapTowns.set(office,d);if(state.view==='map'&&state.loadedOffice===office)renderMap();});}return mapTowns.get(office);}// mapPx: 지도가 실제로 그려진 폭(px). 점·글자 크기를 화면 px로 맞추는 데 쓴다.
 // 경로 문자열(M x,y L x,y … Z)의 경계 상자 [x1,y1,x2,y2].
 function pathBox(d){const n=d.match(/-?\d+(?:\.\d+)?/g).map(Number),b=[Infinity,Infinity,-Infinity,-Infinity];for(let i=0;i+1<n.length;i+=2){b[0]=Math.min(b[0],n[i]);b[1]=Math.min(b[1],n[i+1]);b[2]=Math.max(b[2],n[i]);b[3]=Math.max(b[3],n[i+1]);}return b;}
 function loadMap(){
- const office=state.loadedOffice;if(state.demo||mapData?.office===office||mapLoading===office)return;
+ const office=state.loadedOffice;if(state.demo||mapData?.office===office||mapLoading===office||mapFailed===office)return;
  mapLoading=office;mapError='';
  regionsData().then(regions=>{const sido=regions[sidoNameOf(office)]?.code;return Promise.all([geoFile(office+'.json'),sido?geoFile('schools-'+sido+'.json'):{}]);})
   .then(([shape,points])=>{if(state.loadedOffice===office)mapData={office,shape,points,boxes:new Map(shape.districts.map(d=>[d.name,pathBox(d.d)]))};})
-  .catch(()=>{mapError='지도 자료를 불러오지 못했습니다. 새로고침해 다시 시도하세요.';})
-  .finally(()=>{if(mapLoading===office)mapLoading='';if(state.view==='map')render();});
+  .catch(()=>{mapFailed=office;mapError='지도 자료를 불러오지 못했습니다. 새로고침해 다시 시도하세요.';})
+  .finally(()=>{if(mapLoading===office)mapLoading='';if(state.view==='map'||state.view==='overview')render();});
 }
 // 학교 좌표 → 지도 좌표(build-geo.mjs와 같은 투영). 본토 가까이 옮겨 그린 섬 지역(울릉군·옹진군)은 학교도 같이 옮긴다.
 function mapPoint(s){
@@ -462,6 +467,31 @@ function mapScale(rows,val){
 const shortSchool=n=>String(n||'').replace(/\s+/g,'').replace(/(초등학교|중학교)(.+)분교장$/,'$2분교').replace('교육대학교','교대').replace(/대학교사범대학부[설속]/,'대사대부').replace(/대학교부[설속]/,'대부').replace(/여자(중|고)/,'여$1').replace(/초등학교$/,'초').replace(/중학교$/,'중').replace(/고등학교$/,'고');
 // 점 반지름(화면 px): 학생 수의 제곱근에 비례(면적이 학생 수를 따라가게), 공시가 없는 학교는 가장 작은 점.
 const dotPx=(n,max)=>n==null?2.2:2.6+8.4*Math.sqrt(n/max);
+// 보이는 범위 [x,y,w,h]: 전체 지역은 교육청 전체, 지역을 고르면 그 지역 상자를 25% 넓혀 지도와 같은 비율로 맞춘다(너무 작은 구는 1/8까지만 확대).
+function mapFrame(focus){
+ const {shape}=mapData,box=focus&&mapData.boxes.get(focus),aspect=shape.w/shape.h;if(!box)return [0,0,shape.w,shape.h];
+ let w=(box[2]-box[0])*1.25;const h=(box[3]-box[1])*1.25;if(w/h<aspect)w=h*aspect;w=Math.max(w,shape.w/8);const vh=w/aspect;
+ return [(box[0]+box[2]-w)/2,(box[1]+box[3]-vh)/2,w,vh];
+}
+// 한눈에 보기의 작은 학교 지도: 시·군·구 경계(한 가지 회색)와 학교급 점만 그린다. 확대·이름표는 학교 지도 화면에 맡기고,
+// 시·군·구를 누르면 그 지역으로 좁히고 점을 누르면 학교 정보를 연다. 점 크기는 기준 폭 miniPx에 맞춰 지도 단위로 바꾼다.
+const miniPx=380;
+function miniMapCard(items,span){
+ if(state.demo||!items.length)return '';
+ if(mapData?.office!==state.loadedOffice){loadMap();return chartCard({title:'학교 지도',body:chartEmpty(mapError||'지도를 준비하고 있습니다.','pin'),span});}
+ const {shape}=mapData,focus=mapData.boxes.has(state.loadedDistrict)?state.loadedDistrict:'',[vx,vy,vw,vh]=mapFrame(focus),u=vw/miniPx,f=n=>+n.toFixed(2);
+ const areas=shape.districts.map(d=>`<path class="map-area ${d.name===focus?'q-focus':'q-flat'}${focus&&d.name!==focus?' is-dim':''}" d="${d.d}" data-mini-district="${esc(d.name)}"><title>${esc(d.name)}</title></path>`).join('');
+ const outline=focus?`<path class="map-focus" d="${shape.districts.find(d=>d.name===focus).d}"/>`:'';
+ const insets=focus?'':(shape.boxes||[]).map(b=>`<g class="map-inset"><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="${f(4*u)}"/></g>`).join('');
+ const maxS=Math.max(1,...items.map(s=>studentsOf(s)||0)),k=focus?.8:.55,dots=[];let missing=0;
+ for(const s of items){const p=mapPoint(s);if(p)dots.push({s,p,px:dotPx(studentsOf(s),maxS)*k});else missing++;}
+ dots.sort((a,b)=>b.px-a.px);
+ const marks=dots.map(({s,p,px})=>`<circle class="map-dot ${color(s.SCHUL_KND_SC_NM)}${studentsOf(s)==null?' is-na':''}" cx="${f(p[0])}" cy="${f(p[1])}" r="${f(px*u)}" data-mini-school="${esc(s.SD_SCHUL_CODE)}"><title>${esc(s.SCHUL_NM)} · 학생 ${fmt(studentsOf(s))}명</title></circle>`).join('');
+ const scope=focus||'전체 지역';
+ const body=`<div class="map-wrap mini-map"><svg class="map-svg" viewBox="${f(vx)} ${f(vy)} ${f(vw)} ${f(vh)}" role="img" aria-label="${esc(scope+' 학교 위치: '+fmt(dots.length)+'개교')}">${areas}${insets}${outline}${marks}</svg></div>`+kindLegendFor(dots.map(d=>color(d.s.SCHUL_KND_SC_NM)));
+ const note=`점 크기는 학생 수입니다.${missing&&!alrimiAllBusy?` 위치 미확인 ${fmt(missing)}개교.`:''} 시·군·구를 누르면 그 지역${focus?'으로 옮기고':'으로 좁히고'}, 확대·학교 이름은 <button type="button" class="link-button" data-view="map">학교 지도</button>에서 봅니다.`;
+ return chartCard({title:'학교 지도',caption:`${scope} · ${fmt(dots.length)}개교`,body,note,span});
+}
 function mapRows(){const groups=new Map();for(const s of state.allSchools){const d=districtOf(s);if(!groups.has(d))groups.set(d,[]);groups.get(d).push(s);}return [...groups].map(([name,list])=>({name,list,a:agg(list,true)}));}
 function schoolMap(){
  const empty=text=>`<div class="overview"><article class="chart-card span-12">${chartEmpty(text,'pin')}</article></div>`;
@@ -469,10 +499,8 @@ function schoolMap(){
  if(!state.allSchools.length||mapData?.office!==state.loadedOffice)return empty(mapError||(state.loadingSchools||mapLoading?'지도를 준비하고 있습니다.':'교육청을 선택해 학교를 불러오세요.'));
  const {shape}=mapData,metric=mapMetrics[state.mapMetric]?state.mapMetric:'students',[mLabel,mVal,mNum,mUnit]=mapMetrics[metric],hidden=state.mapHide;
  const rows=mapRows(),byName=new Map(rows.map(r=>[r.name,r])),scale=mVal?mapScale(rows.filter(r=>mapData.boxes.has(r.name)),mVal):null;
- // 보이는 범위: 전체 지역은 교육청 전체, 지역을 고르면 그 지역 상자를 25% 넓혀 지도와 같은 비율로 맞춘다(너무 작은 구는 1/8까지만 확대).
- const focus=mapData.boxes.has(state.loadedDistrict)?state.loadedDistrict:'',box=focus&&mapData.boxes.get(focus),aspect=shape.w/shape.h;
- let [vx,vy,vw,vh]=[0,0,shape.w,shape.h];
- if(box){let w=(box[2]-box[0])*1.25;const h=(box[3]-box[1])*1.25;if(w/h<aspect)w=h*aspect;w=Math.max(w,shape.w/8);vw=w;vh=w/aspect;vx=(box[0]+box[2]-vw)/2;vy=(box[1]+box[3]-vh)/2;}
+ const focus=mapData.boxes.has(state.loadedDistrict)?state.loadedDistrict:'';
+ let [vx,vy,vw,vh]=mapFrame(focus);
  // 지도 안 확대·이동(mapView)은 교육청·지역이 같으면 다시 그려도 유지한다. base는 처음 범위(되돌리기·이동 한계).
  const key=state.loadedOffice+'|'+focus;if(mapView?.key!==key)mapView={key,x:vx,y:vy,w:vw,h:vh,base:{x:vx,y:vy,w:vw,h:vh}};
  ({x:vx,y:vy,w:vw,h:vh}=mapView);
@@ -495,7 +523,7 @@ function schoolMap(){
  const svg=`<div class="map-wrap"><svg class="map-svg"${focus?' data-focus="1"':''} viewBox="${f(vx)} ${f(vy)} ${f(vw)} ${f(vh)}" role="img" aria-label="${esc(scopeName+' 학교 지도: '+fmt(dots.length)+'개교'+(scale&&!focus?', 시·군·구 색은 '+mLabel:''))}">${areas}${townMarks}${outline}${insets}${dotMarks}</svg><svg class="map-overlay" aria-hidden="true"></svg><div class="map-tip" hidden></div><div class="map-zoom" role="group" aria-label="지도 확대"><button type="button" class="icon-button" data-map-zoom="in" aria-label="확대">${icon('plus')}</button><button type="button" class="icon-button" data-map-zoom="out" aria-label="축소">${icon('minus')}</button><button type="button" class="icon-button" data-map-zoom="reset" aria-label="처음 범위로">${icon('reset')}</button></div></div>`;
  // 학교급 칩의 개수는 지금 보는 범위(지역을 고르면 그 지역)의 학교 수. 칩 종류는 교육청 기준으로 두어 지역을 바꿔도 칩 자리가 그대로다.
  const kinds=types.slice(1).filter(t=>state.allSchools.some(s=>s.SCHUL_KND_SC_NM===t)),scoped=focus?state.allSchools.filter(s=>districtOf(s)===focus):state.allSchools;
- const toolbar=`<div class="map-toolbar">${focus?'':`<div class="segmented" role="group" aria-label="시·군·구 색칠 기준">${Object.entries(mapMetrics).map(([k,[label]])=>`<button type="button" data-map-metric="${k}" class="${k===metric?'selected':''}" aria-pressed="${k===metric}">${label}</button>`).join('')}</div>`}<div class="chips" role="group" aria-label="지도에 표시할 학교급">${kinds.map(t=>`<button type="button" class="chip${hidden.has(t)?'':' active'}" data-map-kind="${t}" aria-pressed="${!hidden.has(t)}"><span class="swatch ${color(t)}"></span>${t==='특수학교'?'특수':t.replace('학교','')}<span class="chip-count">${fmt(scoped.filter(s=>s.SCHUL_KND_SC_NM===t).length)}</span></button>`).join('')}</div></div>`;
+ const toolbar=`<div class="map-toolbar">${focus?'':`<div class="segmented" role="group" aria-label="시·군·구 색칠 기준">${Object.entries(mapMetrics).map(([k,[label]])=>`<button type="button" data-map-metric="${k}" class="${k===metric?'selected':''}" aria-pressed="${k===metric}">${label}</button>`).join('')}</div>`}<div class="chips" role="group" aria-label="지도에 표시할 학교급">${kinds.map(t=>`<button type="button" class="chip${hidden.has(t)?'':' active'}" data-map-kind="${t}" aria-pressed="${!hidden.has(t)}"><span class="swatch ${color(t)}"></span>${t==='특수학교'?'특수':t.replace('학교','')}<span class="chip-count">${fmt(scoped.filter(s=>s.SCHUL_KND_SC_NM===t).length)}</span></button>`).join('')}</div><div class="map-export" role="group" aria-label="지도 내보내기"><button type="button" class="button compact" data-map-export="png" title="보이는 범위를 PNG 이미지로 저장">${icon('download')}PNG</button><button type="button" class="button compact" data-map-export="svg" title="보이는 범위를 SVG(벡터)로 저장">${icon('download')}SVG</button></div></div>`;
  const range=g=>g.lo===g.hi?mNum(g.lo):mNum(g.lo)+' ~ '+mNum(g.hi);
  const ramp=scale&&!focus?`<div class="map-legend-block"><p class="sub-head">${mLabel}<small>${mUnit} · 시·군·구</small></p><ul class="map-ramp">${scale.groups.map(g=>`<li><span class="map-swatch q${g.step}"></span>${range(g)}</li>`).join('')}</ul></div>`:'';
  const refs=[30,100,300,1000,2000].filter(n=>n<=maxS).slice(-3),sizes=`<div class="map-legend-block"><p class="sub-head">점 크기<small>학생 수</small></p><ul class="map-sizes">${refs.map(n=>{const r=dotPx(n,maxS);return `<li><svg width="${Math.ceil(r*2+2)}" height="${Math.ceil(r*2+2)}" aria-hidden="true"><circle cx="${f(r+1)}" cy="${f(r+1)}" r="${f(r)}"/></svg>${fmt(n)}명</li>`;}).join('')}</ul></div>`;
@@ -503,6 +531,7 @@ function schoolMap(){
  const pending=alrimiAllBusy?'학교알리미 공시를 맞추는 중이라 일부 학교가 아직 보이지 않습니다. · ':'';
  const shownN=focus?dots.filter(d=>districtOf(d.s)===focus).length:dots.length;
  const note=`${pending}<b>${fmt(shownN)}</b>개교 표시${missing&&!alrimiAllBusy?` · 위치 미확인 ${fmt(missing)}개교(공시 자료와 이어지지 않았거나 좌표 없음)`:''}. 점을 누르면 학교 정보, 시·군·구를 누르면 그 지역으로 확대합니다. 지도 안에서는 +/− 버튼이나 ⌘(Ctrl)+스크롤·핀치로 확대하고 끌어서 옮깁니다. 경계는 통계청 행정동 경계${ver?`(${ver} 기준)`:''}를 시·군·구로 합쳤고, 위치는 학교알리미 학교기본정보 좌표입니다.`;
+ mapExportInfo={title:(focus?sidoNameOf(state.loadedOffice)+' '+focus:sidoNameOf(state.loadedOffice))+' 학교 지도',sub:`${fmt(shownN)}개교${scale&&!focus?' · 시·군·구 색: '+mLabel:''} · 점 크기: 학생 수`,source:`위치: 학교알리미 학교기본정보 좌표 · 학생 수: 학교알리미 공시 · 경계: 통계청 행정동 경계${ver?`(${ver} 기준)`:''}를 시·군·구로 합침 · 학교모아 ${ymd(now).replace(/^(\d{4})(\d\d)(\d\d)$/,(m,y,mo,d)=>`${y}.${+mo}.${+d}`)} 저장`,file:`${state.demo?'데모_':''}${sidoNameOf(state.loadedOffice)}${focus?'_'+focus:''}_학교지도_${ymd(now)}`};
  const mapCard=chartCard({title:focus?focus+' 학교 지도':'학교 지도',caption:`${fmt(shownN)}개교 · 학교알리미 공시`,body:toolbar+svg+`<div class="map-legend">${ramp}${sizes}</div>`,note,span:12});
  return `<div class="overview">${mapCard}${focus?mapFocusCard(byName.get(focus)):mapRankCard(rows,metric,scale)}</div>`;
 }
@@ -588,6 +617,55 @@ function drawMapLabels(svg,overlay,deep){
  }
  overlay.innerHTML=out.join('');
 }
+// --- 지도 내보내기(PNG·SVG): 지금 보이는 범위(확대·이동 포함)의 지도와 덧층 이름표를 한 장으로 합치고 제목·범례·출처를 붙인다.
+// 내려받은 파일에는 페이지 CSS가 없으므로 계산된 모양을 SVG 표현 속성(fill·stroke 등)으로 요소마다 옮겨 적는다(style 속성은 CSP에 걸린다).
+const exportProps=['fill','fill-opacity','stroke','stroke-width','stroke-dasharray','stroke-linejoin','stroke-linecap','stroke-opacity','opacity','vector-effect'],exportTextProps=['paint-order','font-weight','letter-spacing','text-anchor','dominant-baseline'];
+function inlineSvg(src){
+ const dst=src.cloneNode(true),a=[src,...src.querySelectorAll('*')],b=[dst,...dst.querySelectorAll('*')];
+ a.forEach((el,i)=>{const cs=getComputedStyle(el),o=b[i];for(const p of el.tagName==='text'?[...exportProps,...exportTextProps]:exportProps){const v=cs.getPropertyValue(p);if(v&&v!=='normal')o.setAttribute(p,v);}o.removeAttribute('class');for(const k of Object.keys(o.dataset))delete o.dataset[k];});
+ for(const k of ['role','aria-label','aria-hidden'])dst.removeAttribute(k);
+ return dst;
+}
+function mapExportSvg(){
+ const wrap=$('#map-view .map-wrap'),svg=wrap?.querySelector('.map-svg'),overlay=wrap?.querySelector('.map-overlay'),card=wrap?.closest('.chart-card');if(!svg||!overlay||!mapExportInfo)return null;
+ const css=getComputedStyle(document.documentElement),tok=k=>css.getPropertyValue(k).trim(),font=getComputedStyle(document.body).fontFamily,ink=tok('--ink'),muted=tok('--muted'),n=x=>+x.toFixed(2);
+ const r=wrap.getBoundingClientRect(),W=Math.round(r.width),H=Math.round(r.height),pad=28,top=pad+58,TW=W+pad*2;
+ const ctx=document.createElement('canvas').getContext('2d'),tw=(t,size,weight=500)=>{ctx.font=`${weight} ${size}px ${font}`;return ctx.measureText(t).width;};
+ const text=(x,y,t,size,fill,weight=500)=>`<text x="${n(x)}" y="${n(y)}" font-size="${size}" font-weight="${weight}" fill="${fill}" dominant-baseline="middle">${esc(t)}</text>`;
+ const place=(el,src)=>{const b=src.getBoundingClientRect();el.setAttribute('x',n(pad+b.left-r.left));el.setAttribute('y',n(top+b.top-r.top));el.setAttribute('width',n(b.width));el.setAttribute('height',n(b.height));return new XMLSerializer().serializeToString(el);};
+ // 범례: 화면 범례(학교급 칩·색칠 단계·점 크기)를 그대로 읽어 묶음마다 머리말+조각을 흘려 놓는다. 줄이 넘치면 다음 줄로.
+ const blocks=[],headOf=el=>{const small=el.querySelector('small')?.textContent||'';return el.textContent.replace(small,'').trim()+(small?' ('+small+')':'');};
+ blocks.push({head:'학교급',items:[...card.querySelectorAll('.map-toolbar .chip.active')].map(c=>{const fill=getComputedStyle(c.querySelector('.swatch')).backgroundColor,count=c.querySelector('.chip-count')?.textContent||'',t=c.textContent.replace(count,'').trim()+' '+count;return {w:14+tw(t,13),h:20,draw:(x,y)=>`<circle cx="${n(x+5)}" cy="${n(y)}" r="5" fill="${fill}" stroke="#fff" stroke-width="1"/>`+text(x+14,y,t,13,muted)};})});
+ for(const block of card.querySelectorAll('.map-legend-block')){
+  const head=headOf(block.querySelector('.sub-head')),items=[];
+  for(const li of block.querySelectorAll('.map-ramp li')){const fill=getComputedStyle(li.querySelector('.map-swatch')).backgroundColor,t=li.textContent.trim();items.push({w:20+tw(t,13),h:20,draw:(x,y)=>`<rect x="${n(x)}" y="${n(y-5)}" width="14" height="10" rx="3" fill="${fill}" stroke="rgba(9,30,66,.15)" stroke-width="1"/>`+text(x+20,y,t,13,muted)});}
+  for(const li of block.querySelectorAll('.map-sizes li')){const c=li.querySelector('circle'),rr=+c.getAttribute('r'),cs=getComputedStyle(c),t=li.textContent.trim();items.push({w:rr*2+6+tw(t,13),h:Math.max(20,rr*2+4),draw:(x,y)=>`<circle cx="${n(x+rr)}" cy="${n(y)}" r="${rr}" fill="${cs.fill}" stroke="${cs.stroke}" stroke-width="1"/>`+text(x+rr*2+6,y,t,13,muted)});}
+  if(items.length)blocks.push({head,items});
+ }
+ // 줄 나누기를 먼저 하고, 한 줄의 조각은 그 줄의 가운데 높이에 맞춰 그린다(점 크기 범례가 글자보다 높다).
+ const rows=[[]];let x=0;
+ const put=(w,h,draw,gap=0)=>{if(x&&x+gap+w>W){rows.push([]);x=0;gap=0;}rows[rows.length-1].push({x:x+gap,h,draw});x+=gap+w;};
+ for(const b of blocks){put(tw(b.head,12.5,700)+10,20,(x0,y0)=>text(x0,y0,b.head,12.5,ink,700),x?28:0);for(const it of b.items)put(it.w+14,it.h,it.draw);}
+ const out=[];let y=top+H+18;
+ for(const row of rows){const h=Math.max(20,...row.map(i=>i.h));for(const i of row)out.push(i.draw(pad+i.x,y+h/2));y+=h+6;}
+ // 출처: 폭에 맞춰 단어 단위로 줄바꿈.
+ y+=12;const lines=[];let line='';for(const word of mapExportInfo.source.split(' ')){const t=line?line+' '+word:word;if(line&&tw(t,11.5)>W){lines.push(line);line=word;}else line=t;}if(line)lines.push(line);
+ lines.forEach((t,i)=>out.push(text(pad,y+i*17,t,11.5,muted)));
+ const TH=Math.ceil(y+(lines.length-1)*17+pad);
+ const head=text(pad,pad+12,mapExportInfo.title,22,ink,800)+text(pad,pad+40,mapExportInfo.sub,13,muted);
+ const body=`<rect width="${TW}" height="${TH}" fill="#fff"/>${head}<rect x="${pad}" y="${top}" width="${W}" height="${H}" rx="10" fill="${tok('--surface-2')||'#f4f6fa'}"/>${place(inlineSvg(svg),svg)}${place(inlineSvg(overlay),overlay)}${out.join('')}`;
+ return {text:`<svg xmlns="http://www.w3.org/2000/svg" width="${TW}" height="${TH}" viewBox="0 0 ${TW} ${TH}" font-family="${esc(font)}">${body}</svg>`,w:TW,h:TH};
+}
+function exportMap(kind){
+ const out=mapExportSvg();if(!out){notice('내보낼 지도가 없습니다.');return;}
+ const name=mapExportInfo.file;
+ if(kind==='svg'){saveBlob(new Blob([out.text],{type:'image/svg+xml;charset=utf-8'}),name+'.svg');return;}
+ // PNG: SVG를 이미지로 읽어 2배 해상도 캔버스에 그린다(CSP img-src가 data:를 허용). 글꼴은 시스템 글꼴로 바뀔 수 있다.
+ const img=new Image(),k=2;
+ img.onload=()=>{const c=document.createElement('canvas');c.width=out.w*k;c.height=out.h*k;const g=c.getContext('2d');g.scale(k,k);g.drawImage(img,0,0,out.w,out.h);c.toBlob(b=>b?saveBlob(b,name+'.png'):notice('PNG를 만들지 못했습니다. SVG로 저장해 보세요.'),'image/png');};
+ img.onerror=()=>notice('PNG를 만들지 못했습니다. SVG로 저장해 보세요.');
+ img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(out.text);
+}
 const mapMinW=()=>mapData.shape.w/25;// 가장 크게 확대했을 때 보이는 폭(교육청 지도 폭의 1/25, 강원이면 약 10km)
 // cx·cy(지도 단위)를 중심으로 factor배 확대. 처음 범위보다 넓게 줄이지 않고, 보이는 범위가 처음 범위 밖으로 나가지 않게 한다.
 function zoomMap(factor,cx,cy){const v=mapView,b=v.base,w=Math.min(b.w,Math.max(mapMinW(),v.w/factor)),k=w/v.w;cx??=v.x+v.w/2;cy??=v.y+v.h/2;v.x=cx-(cx-v.x)*k;v.y=cy-(cy-v.y)*k;v.w=w;v.h=w*b.h/b.w;clampMap();const svg=$('#map-view .map-svg');if(svg)applyMapView(svg);}
@@ -629,6 +707,8 @@ function mapTip(el){
   // 고른 지역을 다시 눌러도 전체로 돌아가지 않는다(끌어서 옮기다 누르는 일이 잦다). 전체로는 오른쪽 카드의 '전체 지역 지도' 버튼으로.
   const area=e.target.closest('[data-map-district]');if(area&&area.dataset.mapDistrict!==state.loadedDistrict)selectDistrict(area.dataset.mapDistrict);
  });}
+// 한눈에 보기의 작은 지도: 점은 학교 정보, 시·군·구는 그 지역으로 좁힌다(이미 고른 지역은 그대로).
+$('#overview').addEventListener('click',e=>{const dot=e.target.closest('[data-mini-school]');if(dot){schoolDetail(dot.dataset.miniSchool);return;}const area=e.target.closest('[data-mini-district]');if(area&&area.dataset.miniDistrict!==state.loadedDistrict)selectDistrict(area.dataset.miniDistrict);});
 const viewText={overview:['한눈에 보기','관내 학교의 규모와 구성, 이번 달 일정을 한 화면에서 확인하세요.'],map:['학교 지도','관내 학교의 위치와 규모를 시·군·구 지도 위에서 확인하세요. 시·군·구를 누르면 그 지역으로 확대합니다.'],districts:['지역 비교','교육청 안의 시·군·구를 학교·학생·교원 규모와 소규모 학교 비율로 한눈에 비교하세요.'],schools:['학교별 현황','학교마다 학급·학생·교원 규모와 이번 달 일정을 이어서 확인하세요.'],calendar:['학사일정','관내 학교의 학사일정을 달력과 목록으로 확인하세요.'],offices:['시도교육청 비교','전국 시도교육청의 학교·학생·교원 규모를 학교알리미 공시로 한눈에 비교하세요.']};
 function setHeading(){
  const [title,subtitle]=viewText[state.view];$('#heading').textContent=title;$('#subtitle').textContent=subtitle;document.title=title+' · 학교모아';
@@ -745,7 +825,8 @@ async function loadSchools(){
 }
 function startDemo(){state.revision++;state.demo=true;state.loadedOffice='K10';state.loadedDistrict='';$('#office').value='K10';state.allSchools=demoSchools();state.schools=state.allSchools;state.events=demoEvents();state.failures=0;busy(false);notice('데모 모드 · 아래 학교명과 일정은 모두 가상 자료입니다. 실제 학교 정보는 인증키 연결 후 조회하세요.');render();}
 function csvCell(v){let value=String(v??'');if(/^[\s]*[=+@-]/.test(value))value="'"+value;return '"'+value.replace(/"/g,'""')+'"';}
-function saveCsv(rows,name){const text='\uFEFF'+rows.map(row=>row.map(csvCell).join(',')).join('\r\n');const link=document.createElement('a');link.href=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8;'}));link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);}
+function saveBlob(blob,name){const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);}
+function saveCsv(rows,name){const text='\uFEFF'+rows.map(row=>row.map(csvCell).join(',')).join('\r\n');saveBlob(new Blob([text],{type:'text/csv;charset=utf-8;'}),name);}
 function download(){if(state.view==='districts'){if(!state.allSchools.length){notice('내려받을 자료가 없습니다.');return;}const {rows,total}=compareData(),line=r=>[r.name,r.list.length,...types.slice(1).map(t=>r.kinds[t].n),r.a.nS?r.a.students:'',r.a.nC?r.a.classes:'',r.a.nT?r.a.teachers:'',r.a.perClass?.toFixed(1)??'',r.a.perTeacher?.toFixed(1)??'',r.a.regular?r.a.small:'',r.smallRate==null?'':(r.smallRate*100).toFixed(1),r.entry==null?'':(r.entry*100).toFixed(1)];const years=[...new Set(state.allSchools.map(s=>alrimiStats.get(s.SD_SCHUL_CODE)?.year).filter(Boolean))].sort().join('-');saveCsv([['지역','학교','초등학교','중학교','고등학교','특수학교','학생','학급','교사','학급당 학생','교사 1인당 학생',`소규모 학교(학생 ${smallLimit()}명 이하 초·중·고)`,'소규모 학교 비율(%)','초1÷초6(%)'],...rows.sort((a,b)=>b.list.length-a.list.length).map(line),line(total)],`${state.demo?'데모_':''}${sidoNameOf(state.loadedOffice)}_지역비교_${years||'공시'}.csv`);return;}if(state.view==='offices'){if(!officeSummary){notice('내려받을 자료가 없습니다.');return;}const cols=['시도교육청','학교','학생','학급','교사','학급당 학생','교사 1인당 학생',`소규모 학교 비율(학생 ${officeSummary.smallSchool}명 이하, %)`,'초1÷초6(%)'],line=r=>[r.full,r.schools,r.students,r.classes,r.teachers,r.perClass?.toFixed(1),r.perTeacher?.toFixed(1),r.smallRate==null?'':(r.smallRate*100).toFixed(1),r.entry==null?'':(r.entry*100).toFixed(1)];const text='\uFEFF'+[cols,...officeSummary.rows.map(line),line(officeSummary.nation)].map(row=>row.map(csvCell).join(',')).join('\r\n');const link=document.createElement('a');link.href=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8;'}));link.download=`시도교육청현황_${officeSummary.years.join('-')}공시.csv`;link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);return;}const calendarView=state.view==='calendar',list=!calendarView?(state.view==='schools'?schools():state.schools).map(s=>({...s,CLASS_COUNT:classesOf(s)??'',STUDENTS:alrimiStats.get(s.SD_SCHUL_CODE)?.students??'',TEACHERS:alrimiStats.get(s.SD_SCHUL_CODE)?.teachers??''})):events();if(!list.length){notice('내려받을 자료가 없습니다.');return;}const cols=!calendarView?{SCHUL_NM:'학교명',SCHUL_KND_SC_NM:'학교급',CLASS_COUNT:'학급수',STUDENTS:'학생수',TEACHERS:'교사수',FOND_SC_NM:'설립',JU_ORG_NM:'관할',ORG_RDNMA:'주소',ORG_TELNO:'전화',ORG_FAXNO:'팩스',HMPG_ADRES:'홈페이지',SD_SCHUL_CODE:'학교코드'}:{AA_YMD:'날짜',SCHUL_NM:'학교명',SCHUL_KND_SC_NM:'학교급',EVENT_NM:'일정명',EVENT_CNTNT:'내용'};const text='\uFEFF'+[Object.values(cols),...list.map(x=>Object.keys(cols).map(k=>x[k]))].map(row=>row.map(csvCell).join(',')).join('\r\n');const link=document.createElement('a');link.href=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8;'}));link.download=`${state.demo?'데모_':state.failures?'일부결과_':''}${calendarView?'학사일정':'학교정보'}_${ymd(state.month).slice(0,6)}.csv`;link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);}
 $('#load').onclick=loadSchools;
 $('#office').onchange=loadSchools;
@@ -773,6 +854,7 @@ document.addEventListener('click',async e=>{
  if(b.dataset.layout){state.schoolLayout=b.dataset.layout;try{localStorage.setItem('schoolLayout',state.schoolLayout);}catch{}render();}
  if(b.hasAttribute('data-more-schools')){state.cardLimit+=boardPage;render();}
  if(b.dataset.mapZoom&&mapView){if(b.dataset.mapZoom==='reset'){Object.assign(mapView,mapView.base);const svg=$('#map-view .map-svg');if(svg)applyMapView(svg);}else zoomMap(b.dataset.mapZoom==='in'?2:.5);}
+ if(b.dataset.mapExport)exportMap(b.dataset.mapExport);
  if(b.dataset.mapMetric){state.mapMetric=b.dataset.mapMetric;render();refocus(`[data-map-metric="${state.mapMetric}"]`);}
  if(b.dataset.mapKind){const t=b.dataset.mapKind;if(state.mapHide.has(t))state.mapHide.delete(t);else state.mapHide.add(t);render();refocus(`[data-map-kind="${t}"]`);}
  if(b.dataset.officeSort){state.officeSort=b.dataset.officeSort;render();refocus(`[data-office-sort="${state.officeSort}"]`);}
