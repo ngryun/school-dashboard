@@ -1,5 +1,7 @@
 // 시·군·구 경계 만들기: 행정동 경계(vuski/admdongkor, 통계청 행정동 경계 가공본)를 NEIS 주소의 시·군·구 단위로 합치고
 // 단순화한 뒤 교육청마다 SVG 경로로 미리 투영해 public/geo/<교육청 코드>.json에 저장한다. 행정구역이 바뀔 때만 다시 만든다.
+// 같은 투영으로 시·군·구 안의 읍·면 경계(동은 한 덩어리 '동 지역'으로 합침)를 public/geo/<교육청 코드>-towns.json에 따로 저장한다
+// (학교 지도에서 지역을 골랐을 때만 받는다).
 // 사용: node scripts/build-geo.mjs <HangJeongDong_verYYYYMMDD.geojson>
 //   원본: https://github.com/vuski/admdongkor (가장 최근 verYYYYMMDD 폴더). mapshaper는 npx로 받아 쓴다.
 import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
@@ -17,6 +19,8 @@ const officeOf = { 서울특별시: 'B10', 부산광역시: 'C10', 대구광역�
 const office = p => p.sidonm === '전남광주통합특별시' ? (/구$/.test(p.sggnm) ? 'F10' : 'Q10') : officeOf[p.sidonm];
 // 일반구(수원시장안구)는 NEIS 주소의 시·군·구 칸(수원시)에 맞춰 시로 합친다. 세종은 app.js의 districtOf와 같이 '세종시'.
 const district = p => p.sidonm === '세종특별자치시' ? '세종시' : p.sggnm.replace(/^(.+?시).+구$/, '$1');
+// 읍·면은 그대로, 동(洞)은 시내 한 덩어리로 합친다(시 안쪽이 수십 개 동으로 잘게 쪼개지지 않게). '동면'처럼 면으로 끝나면 면.
+const town = p => { const t = String(p.adm_nm || '').trim().split(/\s+/).pop(); return /[읍면]$/.test(t) ? t : '동 지역'; };
 // 본토에서 멀리 떨어진 섬(울릉도·독도, 백령·대청·소청도)은 지도가 지나치게 넓어지지 않도록 본토 가까이로 옮겨 그린다(점선 상자로 표시).
 // lng·lat: 옮길 범위, dx·dy: 경도·위도로 옮기는 양. app.js는 이 범위 안의 학교 좌표도 같이 옮긴다.
 const insets = {
@@ -31,13 +35,16 @@ const tagged = { type: 'FeatureCollection', features: [] };
 for (const f of raw.features) {
   const p = f.properties, code = office(p);
   if (!code) { console.warn('교육청을 알 수 없는 시도:', p.sidonm); continue; }
-  tagged.features.push({ type: 'Feature', properties: { office: code, name: district(p) }, geometry: f.geometry });
+  tagged.features.push({ type: 'Feature', properties: { office: code, name: district(p), town: town(p) }, geometry: f.geometry });
 }
 await writeFile(join(work, 'in.json'), JSON.stringify(tagged));
 // dissolve는 행정동 사이의 미세한 틈·겹침을 메워 합친다(작은 섬도 지우지 않는다). interval은 단순화 허용 오차(미터)다.
-const run = spawnSync('npx', ['--yes', 'mapshaper@0.7.61', join(work, 'in.json'), '-dissolve', 'office,name', '-simplify', 'interval=120', 'keep-shapes', '-each', 'lx=this.innerX, ly=this.innerY', '-o', join(work, 'out.json'), 'format=geojson', 'precision=0.0001'], { stdio: 'inherit' });
-if (run.status !== 0) process.exit(run.status || 1);
-const merged = JSON.parse(await readFile(join(work, 'out.json'), 'utf8'));
+const dissolve = (fields, name) => {
+  const run = spawnSync('npx', ['--yes', 'mapshaper@0.7.61', join(work, 'in.json'), '-dissolve', fields, '-simplify', 'interval=120', 'keep-shapes', '-each', 'lx=this.innerX, ly=this.innerY', '-o', join(work, name), 'format=geojson', 'precision=0.0001'], { stdio: 'inherit' });
+  if (run.status !== 0) process.exit(run.status || 1);
+  return readFile(join(work, name), 'utf8').then(JSON.parse);
+};
+const merged = await dissolve('office,name', 'out.json'), townMerged = await dissolve('office,name,town', 'towns.json');
 await rm(work, { recursive: true, force: true });
 
 // 투영: 교육청마다 가운데 위도의 cos로 경도를 줄이는 등장방형 투영(시도 크기에서는 메르카토르와 차이가 작다).
@@ -49,6 +56,8 @@ const rings = g => g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPol
 await mkdir(out, { recursive: true });
 const byOffice = new Map();
 for (const f of merged.features) { const c = f.properties.office; if (!byOffice.has(c)) byOffice.set(c, []); byOffice.get(c).push(f); }
+const townsByOffice = new Map();
+for (const f of townMerged.features) { const c = f.properties.office; if (!townsByOffice.has(c)) townsByOffice.set(c, []); townsByOffice.get(c).push(f); }
 for (const [code, features] of [...byOffice].sort()) {
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
   for (const f of features) for (const poly of rings(f.geometry)) for (const ring of poly) for (const pt of ring) { const [x, y] = shift(code, pt); minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y); }
@@ -65,5 +74,11 @@ for (const [code, features] of [...byOffice].sort()) {
   const boxes = (insets[code] || []).map(s => { const b = [Infinity, Infinity, -Infinity, -Infinity]; for (const f of features.filter(f => f.properties.name === s.name)) for (const poly of rings(f.geometry)) for (const ring of poly) for (const pt of ring) { if (pt[0] < s.lng[0] || pt[0] > s.lng[1] || pt[1] < s.lat[0] || pt[1] > s.lat[1]) continue; const [x, y] = xy(pt); b[0] = Math.min(b[0], x); b[1] = Math.min(b[1], y); b[2] = Math.max(b[2], x); b[3] = Math.max(b[3], y); } const W2 = Math.ceil(spanX * k + pad * 2), H2 = Math.ceil(spanY * k + pad * 2), x = Math.max(1, b[0] - 10), y = Math.max(1, b[1] - 10); return { name: s.name, x: r1(x), y: r1(y), w: r1(Math.min(W2 - 1, b[2] + 10) - x), h: r1(Math.min(H2 - 1, b[3] + 10) - y) }; });
   const file = { source: '통계청 행정동 경계(vuski/admdongkor 가공본)', version, w: Math.ceil(spanX * k + pad * 2), h: Math.ceil(spanY * k + pad * 2), proj, insets: (insets[code] || []).map(({ lng, lat, dx, dy }) => ({ lng, lat, dx, dy })), boxes, districts };
   await writeFile(new URL(code + '.json', out), JSON.stringify(file));
-  console.log(`${code}: ${districts.length}개 시·군·구, ${file.w}×${file.h}, ${(JSON.stringify(file).length / 1024).toFixed(0)}KB`);
+  // 읍·면: 시·군·구마다 {이름, 경로, 이름 위치}. 동만 있는 구(한 덩어리)는 안쪽 경계가 없으므로 뺀다.
+  const towns = {};
+  for (const f of townsByOffice.get(code) || []) { const d = path(f.geometry); if (!d) continue; const [lx, ly] = xy([f.properties.lx, f.properties.ly]).map(r1); (towns[f.properties.name] ||= []).push({ name: f.properties.town, d, lx, ly }); }
+  for (const [name, list] of Object.entries(towns)) if (list.length < 2) delete towns[name]; else list.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+  const townFile = JSON.stringify({ version, towns });
+  await writeFile(new URL(code + '-towns.json', out), townFile);
+  console.log(`${code}: ${districts.length}개 시·군·구, ${file.w}×${file.h}, ${(JSON.stringify(file).length / 1024).toFixed(0)}KB · 읍·면 ${Object.values(towns).flat().length}개 ${(townFile.length / 1024).toFixed(0)}KB`);
 }
