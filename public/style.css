@@ -558,7 +558,7 @@ dialog table{min-width:480px}
 .map-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}
 .map-toolbar .segmented button{padding:5px 11px}
 .map-wrap{position:relative;margin:0 -6px;border-radius:10px;background:var(--surface-2);overflow:hidden}
-.map-svg{display:block;width:100%;height:auto;max-height:74vh}
+.map-svg{display:block;width:100%;height:auto;max-height:86vh}
 .map-wrap.is-zoomed .map-svg{touch-action:none;cursor:grab}
 .map-svg.is-dragging,.map-svg.is-dragging *{cursor:grabbing}
 .map-zoom{position:absolute;top:10px;right:10px;z-index:1;display:grid;gap:4px}
@@ -602,6 +602,8 @@ dialog table{min-width:480px}
 .map-swatch.q0{background:#e4e8ef}.map-swatch.q1{background:#ccd3de}.map-swatch.q2{background:#aeb8c8}.map-swatch.q3{background:#8d99ae}.map-swatch.q4{background:#6b7891}
 .map-swatch.q-na{background:var(--surface-3)}.map-swatch.q-flat{background:#e1e6ee}
 .map-rank .text-button{gap:8px}
+/* 지도 아래 전체 폭 카드의 목록은 폭에 따라 여러 단으로 나눈다(휴대폰은 한 단). */
+.rank-list.map-list{grid-template-columns:repeat(auto-fill,minmax(260px,1fr));column-gap:32px}
 .chart-card .facts{margin:0}
 
 /* ===== 반응형 ===== */

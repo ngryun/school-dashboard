@@ -503,23 +503,23 @@ function schoolMap(){
  const pending=alrimiAllBusy?'학교알리미 공시를 맞추는 중이라 일부 학교가 아직 보이지 않습니다. · ':'';
  const shownN=focus?dots.filter(d=>districtOf(d.s)===focus).length:dots.length;
  const note=`${pending}<b>${fmt(shownN)}</b>개교 표시${missing&&!alrimiAllBusy?` · 위치 미확인 ${fmt(missing)}개교(공시 자료와 이어지지 않았거나 좌표 없음)`:''}. 점을 누르면 학교 정보, 시·군·구를 누르면 그 지역으로 확대합니다. 지도 안에서는 +/− 버튼이나 ⌘(Ctrl)+스크롤·핀치로 확대하고 끌어서 옮깁니다. 경계는 통계청 행정동 경계${ver?`(${ver} 기준)`:''}를 시·군·구로 합쳤고, 위치는 학교알리미 학교기본정보 좌표입니다.`;
- const mapCard=chartCard({title:focus?focus+' 학교 지도':'학교 지도',caption:`${fmt(shownN)}개교 · 학교알리미 공시`,body:toolbar+svg+`<div class="map-legend">${ramp}${sizes}</div>`,note,span:8});
+ const mapCard=chartCard({title:focus?focus+' 학교 지도':'학교 지도',caption:`${fmt(shownN)}개교 · 학교알리미 공시`,body:toolbar+svg+`<div class="map-legend">${ramp}${sizes}</div>`,note,span:12});
  return `<div class="overview">${mapCard}${focus?mapFocusCard(byName.get(focus)):mapRankCard(rows,metric,scale)}</div>`;
 }
 // 오른쪽 카드(전체 지역): 고른 지표 순서의 시·군·구 목록. 지도에 칠한 단계 색을 같이 보여 지도와 목록을 잇는다.
 function mapRankCard(rows,metric,scale){
  const key=metric==='none'?'students':metric,[label,val,num,unit]=mapMetrics[key],ranked=rows.filter(r=>mapData.boxes.has(r.name)&&val(r)!=null).sort((a,b)=>val(b)-val(a)||a.name.localeCompare(b.name,'ko'));
- if(!ranked.length)return chartCard({title:'지역 순위',body:chartEmpty(alrimiAllBusy?'학교알리미 공시를 맞추고 있습니다.':'공시 자료가 없습니다.','layers'),span:4});
- const body=`<ol class="rank-list map-rank">${ranked.map(r=>`<li><button type="button" class="text-button" data-district="${esc(r.name)}" title="${esc(r.name)} 지도로 확대"><span class="map-swatch q${metric==='none'?'-flat':scale?.stepOf(val(r))??'-na'}"></span><span>${esc(r.name)}</span></button><span class="rank-meta">${fmt(r.list.length)}개교</span><b>${num(val(r))}<small>${unit}</small></b></li>`).join('')}</ol>`;
- return chartCard({title:'지역 순위',caption:label+' 높은 순',body,note:'지역 이름을 누르면 지도를 그 지역으로 확대하고, 학사일정과 학급 편성도 불러옵니다.',span:4});
+ if(!ranked.length)return chartCard({title:'지역 순위',body:chartEmpty(alrimiAllBusy?'학교알리미 공시를 맞추고 있습니다.':'공시 자료가 없습니다.','layers'),span:12});
+ const body=`<ol class="rank-list map-rank map-list">${ranked.map(r=>`<li><button type="button" class="text-button" data-district="${esc(r.name)}" title="${esc(r.name)} 지도로 확대"><span class="map-swatch q${metric==='none'?'-flat':scale?.stepOf(val(r))??'-na'}"></span><span>${esc(r.name)}</span></button><span class="rank-meta">${fmt(r.list.length)}개교</span><b>${num(val(r))}<small>${unit}</small></b></li>`).join('')}</ol>`;
+ return chartCard({title:'지역 순위',caption:label+' 높은 순',body,note:'지역 이름을 누르면 지도를 그 지역으로 확대하고, 학사일정과 학급 편성도 불러옵니다.',span:12});
 }
 // 오른쪽 카드(지역 선택): 그 지역의 요약 숫자와 학생 수 순 학교 목록.
 function mapFocusCard(r){
- const a=r.a,ranked=[...r.list].sort((x,y)=>(studentsOf(y)??-1)-(studentsOf(x)??-1)||x.SCHUL_NM.localeCompare(y.SCHUL_NM,'ko')),shown=ranked.slice(0,15);
+ const a=r.a,ranked=[...r.list].sort((x,y)=>(studentsOf(y)??-1)-(studentsOf(x)??-1)||x.SCHUL_NM.localeCompare(y.SCHUL_NM,'ko')),shown=ranked.slice(0,24);
  const facts=`<p class="facts"><span>학교 <b>${fmt(r.list.length)}</b>개교</span><span>학생 <b>${a.nS?fmt(a.students):'—'}</b>명</span><span>학급당 <b>${dec(a.perClass)}</b>명</span><span>소규모 학교 <b>${a.regular?fmt(a.small):'—'}</b>${a.regular?`<small>/${fmt(a.regular)}개교</small>`:''}</span></p>`;
- const list=`<ul class="rank-list">${shown.map(s=>`<li><button type="button" class="text-button" data-school="${esc(s.SD_SCHUL_CODE)}"><span class="swatch ${color(s.SCHUL_KND_SC_NM)}"></span><span>${esc(s.SCHUL_NM)}</span></button><span class="rank-meta">${esc(townOf(s).replace(r.name,'').trim())}</span><b>${fmt(studentsOf(s))}<small>명</small></b></li>`).join('')}</ul>`;
+ const list=`<ul class="rank-list map-list">${shown.map(s=>`<li><button type="button" class="text-button" data-school="${esc(s.SD_SCHUL_CODE)}"><span class="swatch ${color(s.SCHUL_KND_SC_NM)}"></span><span>${esc(s.SCHUL_NM)}</span></button><span class="rank-meta">${esc(townOf(s).replace(r.name,'').trim())}</span><b>${fmt(studentsOf(s))}<small>명</small></b></li>`).join('')}</ul>`;
  const more=ranked.length>shown.length?`학생이 많은 ${shown.length}개교입니다. 나머지 ${fmt(ranked.length-shown.length)}개교는 <button type="button" class="link-button" data-view="schools">학교별 현황</button>에서 확인하세요.`:'';
- return chartCard({title:r.name,caption:'학교알리미 공시',body:facts+list+`<div><button type="button" class="button compact" data-district="">${icon('prev')}전체 지역 지도</button></div>`,note:more,span:4});
+ return chartCard({title:r.name,caption:'학교알리미 공시',body:facts+list+`<div><button type="button" class="button compact" data-district="">${icon('prev')}전체 지역 지도</button></div>`,note:more,span:12});
 }
 // 그린 뒤 실제 폭(mapPx)을 재서 점·글자 크기를 화면 px에 맞춘다(휴대폰에서 글자·점이 너무 작아지지 않게).
 // 높이 제한(max-height)에 걸리면 실제 그림 폭은 상자 폭보다 좁으므로 높이×비율과 비교한다.
