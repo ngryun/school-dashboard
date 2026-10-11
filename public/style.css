@@ -605,7 +605,22 @@ dialog table{min-width:480px}
 /* 지도 아래 전체 폭 카드의 목록은 폭에 따라 여러 단으로 나눈다(휴대폰은 한 단). */
 .rank-list.map-list,.rank-list.wide{grid-template-columns:repeat(auto-fill,minmax(260px,1fr));column-gap:32px}
 .chart-card .facts{margin:0}
-.map-export{display:flex;gap:6px;margin-left:auto}
+.map-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-left:auto}
+.map-export{display:flex;gap:6px}
+/* 지형 음영은 색칠 단계·학교 점을 가리지 않는 보조 정보라 옅게 깐다. */
+.map-relief{pointer-events:none;opacity:.5}
+.mini-map .map-relief{opacity:.35}
+.mini-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}
+/* 지형 음영 스위치: 켜면 파란 손잡이가 오른쪽으로(조작색이라 차트 밖에서만 파랑). */
+.relief-toggle{display:inline-flex;align-items:center;gap:8px;min-height:32px;padding:5px 12px 5px 7px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink-2);font:inherit;font-size:12.5px;font-weight:700;white-space:nowrap;cursor:pointer;transition:background .15s,border-color .15s}
+.relief-toggle:hover{background:var(--surface-2);border-color:var(--line-2)}
+.relief-toggle .switch{position:relative;flex:none;width:28px;height:16px;border-radius:999px;background:var(--line-2);transition:background .15s}
+.relief-toggle .switch::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(9,30,66,.3);transition:transform .15s}
+.relief-toggle[aria-checked="true"]{color:var(--ink)}
+.relief-toggle[aria-checked="true"] .switch{background:var(--accent)}
+.relief-toggle[aria-checked="true"] .switch::after{transform:translateX(12px)}
+@media(max-width:760px){.relief-toggle{min-height:40px}}
+.map-borders path{fill:none;stroke:#fff;stroke-width:1.2px;stroke-linejoin:round;vector-effect:non-scaling-stroke;pointer-events:none}
 .map-export .i{width:14px;height:14px}
 @media(max-width:760px){.map-export .button{min-height:40px}}
 /* 한눈에 보기의 작은 지도: 카드가 한 줄을 다 차지하는 좁은 화면에서도 너무 커지지 않게 높이를 묶는다. */

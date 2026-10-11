@@ -428,6 +428,14 @@ function ensureAllAlrimi(){
 // 관할 지역을 고르면 그 지역으로 확대한다. 좌표는 학교알리미 학교 코드로 잇기 때문에 공시와 매칭된 학교만 점이 찍힌다.
 // 지역 값은 지역 비교와 같이 공시 값만 쓴다(agg(list,true)).
 state.mapMetric='students';state.mapHide=new Set();
+// 지형 음영(geo/<교육청>-relief.png)은 기본으로 켜 두고, 끄면 그 선택을 기억한다.
+state.mapRelief=(()=>{try{return localStorage.getItem('mapRelief')!=='0';}catch{return true;}})();
+// 지형 음영 그림: 시·군·구 색 위, 읍·면 경계·학교 점 아래에 지도 전체 크기로 깐다(경계 밖은 그림에서 이미 투명).
+// 그림이 시·군·구 사이 흰 경계선을 덮으므로 경계선만 그 위에 한 번 더 긋는다.
+const reliefMark=()=>state.mapRelief?`<image class="map-relief" href="geo/${mapData.office}-relief.png" x="0" y="0" width="${mapData.shape.w}" height="${mapData.shape.h}" preserveAspectRatio="none"/><g class="map-borders">${mapData.shape.districts.map(d=>`<path d="${d.d}"/>`).join('')}</g>`:'';
+const reliefSource='지형 음영: AWS Terrain Tiles(SRTM 등 고도 자료)';
+// 지형 음영 켜기·끄기 스위치. 학교 지도와 한눈에 보기의 작은 지도가 같은 설정(state.mapRelief)을 쓴다.
+const reliefToggle=()=>`<button type="button" class="relief-toggle" role="switch" aria-checked="${state.mapRelief}" data-map-relief><span class="switch" aria-hidden="true"></span>지형 음영</button>`;
 const geoFiles=new Map();
 const geoFile=name=>{if(!geoFiles.has(name))geoFiles.set(name,fetch('geo/'+name).then(r=>{if(!r.ok)throw new Error(name);return r.json();}).catch(error=>{geoFiles.delete(name);throw error;}));return geoFiles.get(name);};
 // mapFailed: 지도 자료를 받지 못한 교육청. 다시 그릴 때마다 재요청하지 않도록(새로고침해야 다시 받는다) 기억한다.
@@ -488,7 +496,7 @@ function miniMapCard(items,span){
  dots.sort((a,b)=>b.px-a.px);
  const marks=dots.map(({s,p,px})=>`<circle class="map-dot ${color(s.SCHUL_KND_SC_NM)}${studentsOf(s)==null?' is-na':''}" cx="${f(p[0])}" cy="${f(p[1])}" r="${f(px*u)}" data-mini-school="${esc(s.SD_SCHUL_CODE)}"><title>${esc(s.SCHUL_NM)} · 학생 ${fmt(studentsOf(s))}명</title></circle>`).join('');
  const scope=focus||'전체 지역';
- const body=`<div class="map-wrap mini-map"><svg class="map-svg" viewBox="${f(vx)} ${f(vy)} ${f(vw)} ${f(vh)}" role="img" aria-label="${esc(scope+' 학교 위치: '+fmt(dots.length)+'개교')}">${areas}${insets}${outline}${marks}</svg></div>`+kindLegendFor(dots.map(d=>color(d.s.SCHUL_KND_SC_NM)));
+ const body=`<div class="map-wrap mini-map"><svg class="map-svg" viewBox="${f(vx)} ${f(vy)} ${f(vw)} ${f(vh)}" role="img" aria-label="${esc(scope+' 학교 위치: '+fmt(dots.length)+'개교')}">${areas}${reliefMark()}${insets}${outline}${marks}</svg></div><div class="mini-foot">${kindLegendFor(dots.map(d=>color(d.s.SCHUL_KND_SC_NM)))}${reliefToggle()}</div>`;
  const note=`점 크기는 학생 수입니다.${missing&&!alrimiAllBusy?` 위치 미확인 ${fmt(missing)}개교.`:''} 시·군·구를 누르면 그 지역${focus?'으로 옮기고':'으로 좁히고'}, 확대·학교 이름은 <button type="button" class="link-button" data-view="map">학교 지도</button>에서 봅니다.`;
  return chartCard({title:'학교 지도',caption:`${scope} · ${fmt(dots.length)}개교`,body,note,span});
 }
@@ -520,18 +528,18 @@ function schoolMap(){
  // 고른 지역의 이름은 제목에 있고 시내 점을 가리므로 쓰지 않는다. 학교 이름표는 큰 학교부터 자리를 잡는다(applyMapView → drawMapLabels).
  mapLabels={districts:shape.districts.filter(d=>d.name!==focus).map(d=>({name:d.name,x:d.lx,y:d.ly,dim:!!dim(d.name)})),schools:dots.filter(({s})=>!focus||districtOf(s)===focus).map(({s,p,px})=>({name:shortSchool(s.SCHUL_NM),x:p[0],y:p[1],px})),towns:towns.filter(t=>t.name!=='동 지역').map(t=>({name:t.name,x:t.lx,y:t.ly}))};
  const scopeName=focus||sidoNameOf(state.loadedOffice);
- const svg=`<div class="map-wrap"><svg class="map-svg"${focus?' data-focus="1"':''} viewBox="${f(vx)} ${f(vy)} ${f(vw)} ${f(vh)}" role="img" aria-label="${esc(scopeName+' 학교 지도: '+fmt(dots.length)+'개교'+(scale&&!focus?', 시·군·구 색은 '+mLabel:''))}">${areas}${townMarks}${outline}${insets}${dotMarks}</svg><svg class="map-overlay" aria-hidden="true"></svg><div class="map-tip" hidden></div><div class="map-zoom" role="group" aria-label="지도 확대"><button type="button" class="icon-button" data-map-zoom="in" aria-label="확대">${icon('plus')}</button><button type="button" class="icon-button" data-map-zoom="out" aria-label="축소">${icon('minus')}</button><button type="button" class="icon-button" data-map-zoom="reset" aria-label="처음 범위로">${icon('reset')}</button></div></div>`;
+ const svg=`<div class="map-wrap"><svg class="map-svg"${focus?' data-focus="1"':''} viewBox="${f(vx)} ${f(vy)} ${f(vw)} ${f(vh)}" role="img" aria-label="${esc(scopeName+' 학교 지도: '+fmt(dots.length)+'개교'+(scale&&!focus?', 시·군·구 색은 '+mLabel:''))}">${areas}${reliefMark()}${townMarks}${outline}${insets}${dotMarks}</svg><svg class="map-overlay" aria-hidden="true"></svg><div class="map-tip" hidden></div><div class="map-zoom" role="group" aria-label="지도 확대"><button type="button" class="icon-button" data-map-zoom="in" aria-label="확대">${icon('plus')}</button><button type="button" class="icon-button" data-map-zoom="out" aria-label="축소">${icon('minus')}</button><button type="button" class="icon-button" data-map-zoom="reset" aria-label="처음 범위로">${icon('reset')}</button></div></div>`;
  // 학교급 칩의 개수는 지금 보는 범위(지역을 고르면 그 지역)의 학교 수. 칩 종류는 교육청 기준으로 두어 지역을 바꿔도 칩 자리가 그대로다.
  const kinds=types.slice(1).filter(t=>state.allSchools.some(s=>s.SCHUL_KND_SC_NM===t)),scoped=focus?state.allSchools.filter(s=>districtOf(s)===focus):state.allSchools;
- const toolbar=`<div class="map-toolbar">${focus?'':`<div class="segmented" role="group" aria-label="시·군·구 색칠 기준">${Object.entries(mapMetrics).map(([k,[label]])=>`<button type="button" data-map-metric="${k}" class="${k===metric?'selected':''}" aria-pressed="${k===metric}">${label}</button>`).join('')}</div>`}<div class="chips" role="group" aria-label="지도에 표시할 학교급">${kinds.map(t=>`<button type="button" class="chip${hidden.has(t)?'':' active'}" data-map-kind="${t}" aria-pressed="${!hidden.has(t)}"><span class="swatch ${color(t)}"></span>${t==='특수학교'?'특수':t.replace('학교','')}<span class="chip-count">${fmt(scoped.filter(s=>s.SCHUL_KND_SC_NM===t).length)}</span></button>`).join('')}</div><div class="map-export" role="group" aria-label="지도 내보내기"><button type="button" class="button compact" data-map-export="png" title="보이는 범위를 PNG 이미지로 저장">${icon('download')}PNG</button><button type="button" class="button compact" data-map-export="svg" title="보이는 범위를 SVG(벡터)로 저장">${icon('download')}SVG</button></div></div>`;
+ const toolbar=`<div class="map-toolbar">${focus?'':`<div class="segmented" role="group" aria-label="시·군·구 색칠 기준">${Object.entries(mapMetrics).map(([k,[label]])=>`<button type="button" data-map-metric="${k}" class="${k===metric?'selected':''}" aria-pressed="${k===metric}">${label}</button>`).join('')}</div>`}<div class="chips" role="group" aria-label="지도에 표시할 학교급">${kinds.map(t=>`<button type="button" class="chip${hidden.has(t)?'':' active'}" data-map-kind="${t}" aria-pressed="${!hidden.has(t)}"><span class="swatch ${color(t)}"></span>${t==='특수학교'?'특수':t.replace('학교','')}<span class="chip-count">${fmt(scoped.filter(s=>s.SCHUL_KND_SC_NM===t).length)}</span></button>`).join('')}</div><div class="map-actions">${reliefToggle()}<div class="map-export" role="group" aria-label="지도 내보내기"><button type="button" class="button compact" data-map-export="png" title="보이는 범위를 PNG 이미지로 저장">${icon('download')}PNG</button><button type="button" class="button compact" data-map-export="svg" title="보이는 범위를 SVG(벡터)로 저장">${icon('download')}SVG</button></div></div></div>`;
  const range=g=>g.lo===g.hi?mNum(g.lo):mNum(g.lo)+' ~ '+mNum(g.hi);
  const ramp=scale&&!focus?`<div class="map-legend-block"><p class="sub-head">${mLabel}<small>${mUnit} · 시·군·구</small></p><ul class="map-ramp">${scale.groups.map(g=>`<li><span class="map-swatch q${g.step}"></span>${range(g)}</li>`).join('')}</ul></div>`:'';
  const refs=[30,100,300,1000,2000].filter(n=>n<=maxS).slice(-3),sizes=`<div class="map-legend-block"><p class="sub-head">점 크기<small>학생 수</small></p><ul class="map-sizes">${refs.map(n=>{const r=dotPx(n,maxS);return `<li><svg width="${Math.ceil(r*2+2)}" height="${Math.ceil(r*2+2)}" aria-hidden="true"><circle cx="${f(r+1)}" cy="${f(r+1)}" r="${f(r)}"/></svg>${fmt(n)}명</li>`;}).join('')}</ul></div>`;
  const ver=/^\d{8}$/.test(shape.version||'')?`${shape.version.slice(0,4)}.${+shape.version.slice(4,6)}.${+shape.version.slice(6,8)}`:'';
  const pending=alrimiAllBusy?'학교알리미 공시를 맞추는 중이라 일부 학교가 아직 보이지 않습니다. · ':'';
  const shownN=focus?dots.filter(d=>districtOf(d.s)===focus).length:dots.length;
- const note=`${pending}<b>${fmt(shownN)}</b>개교 표시${missing&&!alrimiAllBusy?` · 위치 미확인 ${fmt(missing)}개교(공시 자료와 이어지지 않았거나 좌표 없음)`:''}. 점을 누르면 학교 정보, 시·군·구를 누르면 그 지역으로 확대합니다. 지도 안에서는 +/− 버튼이나 ⌘(Ctrl)+스크롤·핀치로 확대하고 끌어서 옮깁니다. 경계는 통계청 행정동 경계${ver?`(${ver} 기준)`:''}를 시·군·구로 합쳤고, 위치는 학교알리미 학교기본정보 좌표입니다.`;
- mapExportInfo={title:(focus?sidoNameOf(state.loadedOffice)+' '+focus:sidoNameOf(state.loadedOffice))+' 학교 지도',sub:`${fmt(shownN)}개교${scale&&!focus?' · 시·군·구 색: '+mLabel:''} · 점 크기: 학생 수`,source:`위치: 학교알리미 학교기본정보 좌표 · 학생 수: 학교알리미 공시 · 경계: 통계청 행정동 경계${ver?`(${ver} 기준)`:''}를 시·군·구로 합침 · 학교모아 ${ymd(now).replace(/^(\d{4})(\d\d)(\d\d)$/,(m,y,mo,d)=>`${y}.${+mo}.${+d}`)} 저장`,file:`${state.demo?'데모_':''}${sidoNameOf(state.loadedOffice)}${focus?'_'+focus:''}_학교지도_${ymd(now)}`};
+ const note=`${pending}<b>${fmt(shownN)}</b>개교 표시${missing&&!alrimiAllBusy?` · 위치 미확인 ${fmt(missing)}개교(공시 자료와 이어지지 않았거나 좌표 없음)`:''}. 점을 누르면 학교 정보, 시·군·구를 누르면 그 지역으로 확대합니다. 지도 안에서는 +/− 버튼이나 ⌘(Ctrl)+스크롤·핀치로 확대하고 끌어서 옮깁니다. 경계는 통계청 행정동 경계${ver?`(${ver} 기준)`:''}를 시·군·구로 합쳤고, 위치는 학교알리미 학교기본정보 좌표입니다.${state.mapRelief?' '+reliefSource+'.':''}`;
+ mapExportInfo={title:(focus?sidoNameOf(state.loadedOffice)+' '+focus:sidoNameOf(state.loadedOffice))+' 학교 지도',sub:`${fmt(shownN)}개교${scale&&!focus?' · 시·군·구 색: '+mLabel:''} · 점 크기: 학생 수`,source:`위치: 학교알리미 학교기본정보 좌표 · 학생 수: 학교알리미 공시 · 경계: 통계청 행정동 경계${ver?`(${ver} 기준)`:''}를 시·군·구로 합침${state.mapRelief?' · '+reliefSource:''} · 학교모아 ${ymd(now).replace(/^(\d{4})(\d\d)(\d\d)$/,(m,y,mo,d)=>`${y}.${+mo}.${+d}`)} 저장`,file:`${state.demo?'데모_':''}${sidoNameOf(state.loadedOffice)}${focus?'_'+focus:''}_학교지도_${ymd(now)}`};
  const mapCard=chartCard({title:focus?focus+' 학교 지도':'학교 지도',caption:`${fmt(shownN)}개교 · 학교알리미 공시`,body:toolbar+svg+`<div class="map-legend">${ramp}${sizes}</div>`,note,span:12});
  return `<div class="overview">${mapCard}${focus?mapFocusCard(byName.get(focus)):mapRankCard(rows,metric,scale)}</div>`;
 }
@@ -626,7 +634,7 @@ function inlineSvg(src){
  for(const k of ['role','aria-label','aria-hidden'])dst.removeAttribute(k);
  return dst;
 }
-function mapExportSvg(){
+async function mapExportSvg(){
  const wrap=$('#map-view .map-wrap'),svg=wrap?.querySelector('.map-svg'),overlay=wrap?.querySelector('.map-overlay'),card=wrap?.closest('.chart-card');if(!svg||!overlay||!mapExportInfo)return null;
  const css=getComputedStyle(document.documentElement),tok=k=>css.getPropertyValue(k).trim(),font=getComputedStyle(document.body).fontFamily,ink=tok('--ink'),muted=tok('--muted'),n=x=>+x.toFixed(2);
  const r=wrap.getBoundingClientRect(),W=Math.round(r.width),H=Math.round(r.height),pad=28,top=pad+58,TW=W+pad*2;
@@ -635,7 +643,7 @@ function mapExportSvg(){
  const place=(el,src)=>{const b=src.getBoundingClientRect();el.setAttribute('x',n(pad+b.left-r.left));el.setAttribute('y',n(top+b.top-r.top));el.setAttribute('width',n(b.width));el.setAttribute('height',n(b.height));return new XMLSerializer().serializeToString(el);};
  // 범례: 화면 범례(학교급 칩·색칠 단계·점 크기)를 그대로 읽어 묶음마다 머리말+조각을 흘려 놓는다. 줄이 넘치면 다음 줄로.
  const blocks=[],headOf=el=>{const small=el.querySelector('small')?.textContent||'';return el.textContent.replace(small,'').trim()+(small?' ('+small+')':'');};
- blocks.push({head:'학교급',items:[...card.querySelectorAll('.map-toolbar .chip.active')].map(c=>{const fill=getComputedStyle(c.querySelector('.swatch')).backgroundColor,count=c.querySelector('.chip-count')?.textContent||'',t=c.textContent.replace(count,'').trim()+' '+count;return {w:14+tw(t,13),h:20,draw:(x,y)=>`<circle cx="${n(x+5)}" cy="${n(y)}" r="5" fill="${fill}" stroke="#fff" stroke-width="1"/>`+text(x+14,y,t,13,muted)};})});
+ blocks.push({head:'학교급',items:[...card.querySelectorAll('.map-toolbar .chips .chip.active')].map(c=>{const fill=getComputedStyle(c.querySelector('.swatch')).backgroundColor,count=c.querySelector('.chip-count')?.textContent||'',t=c.textContent.replace(count,'').trim()+' '+count;return {w:14+tw(t,13),h:20,draw:(x,y)=>`<circle cx="${n(x+5)}" cy="${n(y)}" r="5" fill="${fill}" stroke="#fff" stroke-width="1"/>`+text(x+14,y,t,13,muted)};})});
  for(const block of card.querySelectorAll('.map-legend-block')){
   const head=headOf(block.querySelector('.sub-head')),items=[];
   for(const li of block.querySelectorAll('.map-ramp li')){const fill=getComputedStyle(li.querySelector('.map-swatch')).backgroundColor,t=li.textContent.trim();items.push({w:20+tw(t,13),h:20,draw:(x,y)=>`<rect x="${n(x)}" y="${n(y-5)}" width="14" height="10" rx="3" fill="${fill}" stroke="rgba(9,30,66,.15)" stroke-width="1"/>`+text(x+20,y,t,13,muted)});}
@@ -653,11 +661,14 @@ function mapExportSvg(){
  lines.forEach((t,i)=>out.push(text(pad,y+i*17,t,11.5,muted)));
  const TH=Math.ceil(y+(lines.length-1)*17+pad);
  const head=text(pad,pad+12,mapExportInfo.title,22,ink,800)+text(pad,pad+40,mapExportInfo.sub,13,muted);
- const body=`<rect width="${TW}" height="${TH}" fill="#fff"/>${head}<rect x="${pad}" y="${top}" width="${W}" height="${H}" rx="10" fill="${tok('--surface-2')||'#f4f6fa'}"/>${place(inlineSvg(svg),svg)}${place(inlineSvg(overlay),overlay)}${out.join('')}`;
+ // 지형 음영 그림은 파일 안에 data: URL로 넣는다(내려받은 SVG와 PNG 변환용 이미지는 바깥 파일을 읽지 못한다).
+ const mapClone=inlineSvg(svg);
+ for(const im of mapClone.querySelectorAll('image')){const blob=await fetch(im.getAttribute('href')).then(r=>r.ok?r.blob():null).catch(()=>null);if(!blob){im.remove();continue;}im.setAttribute('href',await new Promise(ok=>{const fr=new FileReader();fr.onload=()=>ok(fr.result);fr.readAsDataURL(blob);}));}
+ const body=`<rect width="${TW}" height="${TH}" fill="#fff"/>${head}<rect x="${pad}" y="${top}" width="${W}" height="${H}" rx="10" fill="${tok('--surface-2')||'#f4f6fa'}"/>${place(mapClone,svg)}${place(inlineSvg(overlay),overlay)}${out.join('')}`;
  return {text:`<svg xmlns="http://www.w3.org/2000/svg" width="${TW}" height="${TH}" viewBox="0 0 ${TW} ${TH}" font-family="${esc(font)}">${body}</svg>`,w:TW,h:TH};
 }
-function exportMap(kind){
- const out=mapExportSvg();if(!out){notice('내보낼 지도가 없습니다.');return;}
+async function exportMap(kind){
+ const out=await mapExportSvg();if(!out){notice('내보낼 지도가 없습니다.');return;}
  const name=mapExportInfo.file;
  if(kind==='svg'){saveBlob(new Blob([out.text],{type:'image/svg+xml;charset=utf-8'}),name+'.svg');return;}
  // PNG: SVG를 이미지로 읽어 2배 해상도 캔버스에 그린다(CSP img-src가 data:를 허용). 글꼴은 시스템 글꼴로 바뀔 수 있다.
@@ -854,7 +865,8 @@ document.addEventListener('click',async e=>{
  if(b.dataset.layout){state.schoolLayout=b.dataset.layout;try{localStorage.setItem('schoolLayout',state.schoolLayout);}catch{}render();}
  if(b.hasAttribute('data-more-schools')){state.cardLimit+=boardPage;render();}
  if(b.dataset.mapZoom&&mapView){if(b.dataset.mapZoom==='reset'){Object.assign(mapView,mapView.base);const svg=$('#map-view .map-svg');if(svg)applyMapView(svg);}else zoomMap(b.dataset.mapZoom==='in'?2:.5);}
- if(b.dataset.mapExport)exportMap(b.dataset.mapExport);
+ if(b.dataset.mapExport){b.disabled=true;try{await exportMap(b.dataset.mapExport);}catch{notice('지도를 내보내지 못했습니다.');}finally{b.disabled=false;}}
+ if(b.hasAttribute('data-map-relief')){state.mapRelief=!state.mapRelief;try{localStorage.setItem('mapRelief',state.mapRelief?'1':'0');}catch{}render();refocus((state.view==='map'?'#map-view':'#overview')+' [data-map-relief]');}
  if(b.dataset.mapMetric){state.mapMetric=b.dataset.mapMetric;render();refocus(`[data-map-metric="${state.mapMetric}"]`);}
  if(b.dataset.mapKind){const t=b.dataset.mapKind;if(state.mapHide.has(t))state.mapHide.delete(t);else state.mapHide.add(t);render();refocus(`[data-map-kind="${t}"]`);}
  if(b.dataset.officeSort){state.officeSort=b.dataset.officeSort;render();refocus(`[data-office-sort="${state.officeSort}"]`);}
