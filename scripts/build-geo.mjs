@@ -1,6 +1,6 @@
 // 시·군·구 경계 만들기: 행정동 경계(vuski/admdongkor, 통계청 행정동 경계 가공본)를 NEIS 주소의 시·군·구 단위로 합치고
 // 단순화한 뒤 교육청마다 SVG 경로로 미리 투영해 public/geo/<교육청 코드>.json에 저장한다. 행정구역이 바뀔 때만 다시 만든다.
-// 같은 투영으로 시·군·구 안의 읍·면 경계(동은 한 덩어리 '동 지역'으로 합침)를 public/geo/<교육청 코드>-towns.json에 따로 저장한다
+// 같은 투영으로 시·군·구 안의 읍·면 경계(동은 한 덩어리 '동 지역'으로 합침, 읍·면이 없는 시·구는 행정동)를 public/geo/<교육청 코드>-towns.json에 따로 저장한다
 // (학교 지도에서 지역을 골랐을 때만 받는다).
 // 사용: node scripts/build-geo.mjs <HangJeongDong_verYYYYMMDD.geojson>
 //   원본: https://github.com/vuski/admdongkor (가장 최근 verYYYYMMDD 폴더). mapshaper는 npx로 받아 쓴다.
@@ -19,8 +19,11 @@ const officeOf = { 서울특별시: 'B10', 부산광역시: 'C10', 대구광역�
 const office = p => p.sidonm === '전남광주통합특별시' ? (/구$/.test(p.sggnm) ? 'F10' : 'Q10') : officeOf[p.sidonm];
 // 일반구(수원시장안구)는 NEIS 주소의 시·군·구 칸(수원시)에 맞춰 시로 합친다. 세종은 app.js의 districtOf와 같이 '세종시'.
 const district = p => p.sidonm === '세종특별자치시' ? '세종시' : p.sggnm.replace(/^(.+?시).+구$/, '$1');
-// 읍·면은 그대로, 동(洞)은 시내 한 덩어리로 합친다(시 안쪽이 수십 개 동으로 잘게 쪼개지지 않게). '동면'처럼 면으로 끝나면 면.
-const town = p => { const t = String(p.adm_nm || '').trim().split(/\s+/).pop(); return /[읍면]$/.test(t) ? t : '동 지역'; };
+// 읍·면은 그대로, 동(洞)은 시내 한 덩어리 '동 지역'으로 합친다(시 안쪽이 수십 개 동으로 잘게 쪼개지지 않게). '동면'처럼 면으로 끝나면 면.
+// 다만 읍·면이 하나도 없는 시·구(속초·동해·태백, 광역시의 구)는 합치면 안쪽 경계가 없어지므로 행정동을 그대로 둔다.
+const lastName = p => String(p.adm_nm || '').trim().split(/\s+/).pop();
+const hasTowns = new Set();
+const town = p => { const t = lastName(p); return /[읍면]$/.test(t) ? t : hasTowns.has(office(p) + '|' + district(p)) ? '동 지역' : t; };
 // 본토에서 멀리 떨어진 섬(울릉도·독도, 백령·대청·소청도)은 지도가 지나치게 넓어지지 않도록 본토 가까이로 옮겨 그린다(점선 상자로 표시).
 // lng·lat: 옮길 범위, dx·dy: 경도·위도로 옮기는 양. app.js는 이 범위 안의 학교 좌표도 같이 옮긴다.
 const insets = {
@@ -31,6 +34,7 @@ const insets = {
 const raw = JSON.parse(await readFile(src, 'utf8'));
 const work = join(tmpdir(), 'school-geo-' + process.pid);
 await mkdir(work, { recursive: true });
+for (const f of raw.features) if (/[읍면]$/.test(lastName(f.properties))) hasTowns.add(office(f.properties) + '|' + district(f.properties));
 const tagged = { type: 'FeatureCollection', features: [] };
 for (const f of raw.features) {
   const p = f.properties, code = office(p);
@@ -74,7 +78,7 @@ for (const [code, features] of [...byOffice].sort()) {
   const boxes = (insets[code] || []).map(s => { const b = [Infinity, Infinity, -Infinity, -Infinity]; for (const f of features.filter(f => f.properties.name === s.name)) for (const poly of rings(f.geometry)) for (const ring of poly) for (const pt of ring) { if (pt[0] < s.lng[0] || pt[0] > s.lng[1] || pt[1] < s.lat[0] || pt[1] > s.lat[1]) continue; const [x, y] = xy(pt); b[0] = Math.min(b[0], x); b[1] = Math.min(b[1], y); b[2] = Math.max(b[2], x); b[3] = Math.max(b[3], y); } const W2 = Math.ceil(spanX * k + pad * 2), H2 = Math.ceil(spanY * k + pad * 2), x = Math.max(1, b[0] - 10), y = Math.max(1, b[1] - 10); return { name: s.name, x: r1(x), y: r1(y), w: r1(Math.min(W2 - 1, b[2] + 10) - x), h: r1(Math.min(H2 - 1, b[3] + 10) - y) }; });
   const file = { source: '통계청 행정동 경계(vuski/admdongkor 가공본)', version, w: Math.ceil(spanX * k + pad * 2), h: Math.ceil(spanY * k + pad * 2), proj, insets: (insets[code] || []).map(({ lng, lat, dx, dy }) => ({ lng, lat, dx, dy })), boxes, districts };
   await writeFile(new URL(code + '.json', out), JSON.stringify(file));
-  // 읍·면: 시·군·구마다 {이름, 경로, 이름 위치}. 동만 있는 구(한 덩어리)는 안쪽 경계가 없으므로 뺀다.
+  // 읍·면(동만 있는 시·구는 행정동): 시·군·구마다 {이름, 경로, 이름 위치}. 덩어리가 하나뿐인 곳(세종 일부 등)은 안쪽 경계가 없으므로 뺀다.
   const towns = {};
   for (const f of townsByOffice.get(code) || []) { const d = path(f.geometry); if (!d) continue; const [lx, ly] = xy([f.properties.lx, f.properties.ly]).map(r1); (towns[f.properties.name] ||= []).push({ name: f.properties.town, d, lx, ly }); }
   for (const [name, list] of Object.entries(towns)) if (list.length < 2) delete towns[name]; else list.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
