@@ -567,7 +567,7 @@ dialog table{min-width:480px}
 .map-area{stroke:#fff;stroke-width:1.2px;stroke-linejoin:round;vector-effect:non-scaling-stroke;cursor:pointer;transition:opacity .2s,filter .15s}
 .map-area:hover{filter:brightness(.93)}
 .map-area.q0{fill:#e4e8ef}.map-area.q1{fill:#ccd3de}.map-area.q2{fill:#aeb8c8}.map-area.q3{fill:#8d99ae}.map-area.q4{fill:#6b7891}
-.map-area.q-na{fill:var(--surface-3)}.map-area.q-flat{fill:#e1e6ee}
+.map-area.q-na{fill:var(--surface-3)}.map-area.q-flat{fill:#e1e6ee}.map-area.q-focus{fill:#fff}
 .map-area.is-dim{opacity:.4}
 .map-focus{fill:none;stroke:var(--ink);stroke-width:1.8px;stroke-linejoin:round;vector-effect:non-scaling-stroke;pointer-events:none}
 .map-dot{stroke:#fff;stroke-width:1.1px;vector-effect:non-scaling-stroke;cursor:pointer}
