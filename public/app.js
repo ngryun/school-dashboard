@@ -533,7 +533,7 @@ function applyMapView(svg){
 function drawMapLabels(svg,overlay,deep){
  const m=svg.getScreenCTM();if(!overlay||!m)return;
  const wr=overlay.getBoundingClientRect(),P=(x,y)=>[m.a*x+m.c*y+m.e-wr.left,m.b*x+m.d*y+m.f-wr.top],v=mapView,[L,T]=P(v.x,v.y),[R,B]=P(v.x+v.w,v.y+v.h);
- const small=mapPx<500,dfs=small?10.5:12,fs=small?10.5:11.5,lh=fs*1.3,n=x=>x.toFixed(1),hit=(a,b)=>a[0]<b[2]&&b[0]<a[2]&&a[1]<b[3]&&b[1]<a[3],out=[];
+ const small=mapPx<500,dfs=small?12:13.5,fs=small?12:13,lh=fs*1.3,n=x=>x.toFixed(1),hit=(a,b)=>a[0]<b[2]&&b[0]<a[2]&&a[1]<b[3]&&b[1]<a[3],out=[];
  overlay.setAttribute('viewBox',`0 0 ${n(wr.width)} ${n(wr.height)}`);
  // 지역 이름: 기준점이 보이는 범위 안쪽 여백 안에 있을 때만(가장자리에 걸려 잘려 보이지 않게).
  const blocks=[];
