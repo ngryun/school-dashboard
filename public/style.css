@@ -225,6 +225,7 @@ progress::-moz-progress-bar{background:var(--accent)}
 .bars{display:grid;gap:9px}
 .bar-row{display:grid;grid-template-columns:minmax(72px,34%) 1fr auto;align-items:center;gap:10px;font-size:13px;color:var(--ink-2)}
 .bar-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-label small{margin-left:8px;font-size:11.5px;color:var(--faint);font-variant-numeric:tabular-nums}
 .bar-track{display:block;width:100%;height:8px}
 .bar-fill{fill:var(--data);transition:width .35s ease}
 .bar-fill.elementary{fill:var(--el)}.bar-fill.middle{fill:var(--mi)}.bar-fill.high{fill:var(--hi)}.bar-fill.special{fill:var(--sp)}
@@ -243,6 +244,16 @@ progress::-moz-progress-bar{background:var(--accent)}
 .strip-legend small{font-size:11.5px;color:var(--faint)}
 .strip-legend li.is-zero{opacity:.45}
 .kind-split+.sub-block{padding-top:12px;border-top:1px solid var(--line-soft)}
+/* 초등 입학 예정: 왼쪽 요약 수치 + 오른쪽 입학 연도별 막대 */
+.cohort-split{display:grid;grid-template-columns:minmax(200px,280px) minmax(0,1fr);gap:16px 36px;align-items:start}
+.cohort-split .bar-row{grid-template-columns:150px minmax(0,1fr) auto}
+.cohort-split .bar-value{min-width:72px}
+.cohort-stat{min-width:0}
+.cohort-stat strong{display:block;margin-top:6px;font-size:26px;font-weight:800;letter-spacing:-.8px;line-height:1.15;color:var(--ink);font-variant-numeric:tabular-nums}
+.cohort-stat strong small{font-size:13px;font-weight:600;color:var(--faint);letter-spacing:0}
+.cohort-stat .defs{margin-top:12px;padding-top:12px;border-top:1px solid var(--line-soft)}
+.cohort-stat .defs b{color:var(--ink-2);font-weight:700;font-variant-numeric:tabular-nums}
+@container (max-width:620px){.cohort-split{grid-template-columns:minmax(0,1fr)}}
 .daystrip{margin-top:4px;padding-top:12px;border-top:1px solid var(--line-soft)}
 .daystrip svg{display:block}
 .day-col{fill:var(--data);opacity:.7}.day-col.weekend{fill:var(--data-3);opacity:1;stroke:var(--data-2);stroke-width:1}.day-col.is-max{opacity:1;fill:var(--ink)}
@@ -459,20 +470,20 @@ td small{display:block;color:var(--muted);margin-top:3px;font-size:12px}
 /* 현재 선택한 시도·지역은 행 전체를 옅은 파랑으로 칠한다(막대 옆 파란 점은 중학교 색과 헷갈려 쓰지 않는다). */
 .sbar-row.is-current{background:var(--accent-soft)}
 .sbar-row.is-current .sbar-label{color:var(--accent-ink)}
-.office-table{min-width:760px}
+.office-table{min-width:900px}
 .office-table td,.office-table th{padding:11px 16px}
 .office-table td b{font-weight:750;color:var(--ink)}
 .office-table td .text-button b{font-size:13.5px}
 .office-table tbody tr.is-current td{background:var(--accent-soft)}
 .office-table tfoot td{border-top:1px solid var(--line-2);border-bottom:0;background:var(--surface-2);font-weight:700;color:var(--ink)}
 /* 지역 비교표: 열이 많아 좁은 화면에서는 가로로 밀리므로 지역 이름 열을 붙잡아 둔다. */
-.compare-table{min-width:940px}
-.compare-table td,.compare-table th{padding:10px 12px}
+.compare-table{min-width:1080px}
+.compare-table td,.compare-table th{padding:10px 9px}
 .compare-table th:first-child,.compare-table td:first-child{padding-left:20px}
 .compare-table th:last-child,.compare-table td:last-child{padding-right:20px}
 .compare-table td:last-child{width:1%;white-space:nowrap}
 .compare-table td small{white-space:nowrap;font-size:11.5px;color:var(--faint)}
-.compare-table .meter+small{margin-top:4px}
+.office-table td .meter+small{display:block;margin-top:4px;white-space:nowrap;font-size:11.5px;color:var(--faint)}
 .compare-table .meter svg{width:40px}
 .compare-table .meter{gap:6px}
 /* 가로로 밀리는 표 3종(지역별 현황·시도교육청·지역 비교) 모두 첫 열(이름)을 고정한다. */
