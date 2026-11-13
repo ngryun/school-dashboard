@@ -634,7 +634,7 @@ dialog table{min-width:480px}
 /* ===== 반응형 ===== */
 @media(min-width:1500px){.day{min-height:148px}}
 @media(max-width:1240px){
-  .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .kpis,.kpis.even{grid-template-columns:repeat(3,minmax(0,1fr))}
   .span-4,.span-5,.span-7,.span-8{grid-column:1/-1}
 }
 @media(max-width:1100px){
@@ -691,7 +691,7 @@ dialog table{min-width:480px}
   #district-hint{padding-left:0;margin-top:8px;display:block}
   .status-row{flex-wrap:wrap;gap:8px}
   .notice{flex-basis:100%;font-size:12.5px}
-  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpis,.kpis.even{grid-template-columns:repeat(2,minmax(0,1fr))}
   .kpi{padding:13px 14px 12px}
   .kpi strong{font-size:22px}
   .overview{gap:10px}
@@ -775,3 +775,19 @@ dialog table{min-width:480px}
   .board-toolbar .board-controls,.board-prompt,.board-more,.sc-head .icon-button,.offices .button{display:none!important}
   .chart-card{break-inside:avoid}
 }
+
+/* 조회 기준과 검색 상태를 본문 가까이 두어 자료 범위와 필터를 함께 확인한다. */
+.data-basis{margin:8px 0 0;padding-top:10px;border-top:1px solid var(--line-soft);font-size:12px;color:var(--muted);line-height:1.7;font-variant-numeric:tabular-nums}
+.status-row #cancel-load{flex:none;margin-left:auto;white-space:nowrap}
+.search #search-clear{flex:none;width:28px;height:28px;min-height:28px;border:0;background:transparent}
+.search #search-clear .i{width:15px;height:15px}
+.filter-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 20px;background:var(--surface-2);border-bottom:1px solid var(--line-soft);font-size:13px;color:var(--ink-2)}
+.filter-summary p{margin:0;overflow-wrap:anywhere;word-break:break-word}
+.filter-summary .link-button{flex:none;font-size:12.5px}
+@media(max-width:760px){
+ .status-row #cancel-load{margin-left:0;min-height:40px}
+ .search #search-clear{width:36px;height:36px;min-height:36px}
+ .filter-summary{padding:10px 12px;align-items:flex-start}
+ .data-basis{font-size:11.5px}
+}
+@media print{.data-basis{color:#333}.filter-summary{display:none}}

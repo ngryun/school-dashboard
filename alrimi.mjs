@@ -2,7 +2,8 @@
 // 서버(server.mjs)와 Worker(worker.mjs)에서만 사용하며 인증키는 호출 측 환경변수에서 받는다.
 const BASE = 'https://www.schoolinfo.go.kr/openApi.do';
 export const alrimiTypes = new Set(['09', '22']); // 09 학년별·학급별 학생수, 22 직위별 교원 현황
-const NO_DATA = /없습니다|없음|공시되지 않|제공이 불가|존재하지/;
+// 자료 없음으로 다루는 응답: 미공시, 제공 연도 밖("최근 3년동안의 데이터만 제공"), 공개 예정("…12월 01일 공개됩니다").
+const NO_DATA = /없습니다|없음|공시되지 않|제공이 불가|존재하지|최근 \d+년|공개됩니다/;
 export function validateAlrimi(apiType, params, codes) {
   if (!alrimiTypes.has(apiType)) return '지원하지 않는 공시 항목입니다.';
   if (!/^\d{2}$/.test(params.sido || '') || (codes?.sido && !codes.sido.has(params.sido))) return '시도 코드가 올바르지 않습니다.';
