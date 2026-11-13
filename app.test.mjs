@@ -126,6 +126,8 @@ test('학생 증감은 폐교·통합된 학교의 기준 연도 학생 수를 �
  assert.equal(pick('changeOf([school],null)').then,170);
  assert.deepEqual(pick('moveOf([school])'),{moveIn:5,moveOut:9,net:-4,n:1});
  assert.equal(a.run('signedPct(-0.2)'),'−20.0%');assert.equal(a.run('signed(1200)'),'+1,200');
+ // CSV의 음수 증감률은 숫자로 남기고, 수식처럼 보이는 글자만 막는다.
+ assert.equal(a.run("csvCell('-20.0')"),'"-20.0"');assert.equal(a.run("csvCell('-1+2')"),'"\'-1+2"');assert.equal(a.run("csvCell('=A1')"),'"\'=A1"');
  // 이력이 한 해뿐이거나 없으면(중계 모드) 증감을 내지 않는다.
  a.run("alrimiStats.set(school.SD_SCHUL_CODE,{students:80,trend:[{year:'2026',students:80}]})");
  assert.equal(a.run('changeOf([school])'),null);assert.equal(a.run('moveOf([school])'),null);
