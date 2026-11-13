@@ -132,3 +132,12 @@ test('학생 증감은 폐교·통합된 학교의 기준 연도 학생 수를 �
  a.run("alrimiStats.set(school.SD_SCHUL_CODE,{students:80,trend:[{year:'2026',students:80}]})");
  assert.equal(a.run('changeOf([school])'),null);assert.equal(a.run('moveOf([school])'),null);
 });
+
+test('통학구역 이름표와 기준일 표기를 읽기 좋게 바꾼다',()=>{
+ const a=app();
+ assert.equal(a.run("zoneLabel('거진초통학구역')"),'거진초 통학구역');
+ assert.equal(a.run("zoneLabel('간성초광산초공동통학구역')"),'간성초광산초 공동통학구역');
+ assert.equal(a.run("zoneLabel('두마초제한적공동(일방)통학구역')"),'두마초 제한적공동(일방)통학구역');
+ assert.equal(a.run("zoneBase('2026-09-20')"),'2026.9.20');
+ assert.equal(a.run("zoneSource({source:'한국교육시설안전원 초등학교통학구역',base:'2026-09-20'})"),'통학구역: 한국교육시설안전원 초등학교통학구역(2026.9.20 기준)');
+});

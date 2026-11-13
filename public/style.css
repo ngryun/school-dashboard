@@ -584,6 +584,12 @@ dialog table{min-width:480px}
 .map-area.q-na{fill:var(--surface-3)}.map-area.q-flat{fill:#e1e6ee}.map-area.q-focus{fill:#fff}
 .map-area.is-dim{opacity:.4}
 .map-town{fill:none;stroke:#8d99ae;stroke-width:1px;stroke-dasharray:4 3;stroke-linejoin:round;vector-effect:non-scaling-stroke;pointer-events:none}
+/* 초등학교 통학구역: 초등학교 색 실선(칠은 투명 — 마우스를 받기 위해), 공동통학구역은 옅은 칠 + 점선 */
+.map-zone{fill:transparent;stroke:var(--el-ink);stroke-width:1.3px;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.map-zone.is-shared{fill:rgba(30,155,107,.16);stroke:var(--el-ink);stroke-dasharray:3 2.5}
+.map-zone:hover{fill:rgba(30,155,107,.12)}.map-zone.is-shared:hover{fill:rgba(30,155,107,.28)}
+.map-swatch.zone{background:#fff;box-shadow:inset 0 0 0 1.5px var(--el-ink)}
+.map-swatch.zone-shared{background:rgba(30,155,107,.22);box-shadow:inset 0 0 0 1px var(--el-ink)}
 .map-town-label{fill:var(--faint);font-weight:600;letter-spacing:-.2px;text-anchor:middle;dominant-baseline:middle;paint-order:stroke;stroke:#fff;stroke-linejoin:round}
 .map-focus{fill:none;stroke:var(--ink);stroke-width:1.8px;stroke-linejoin:round;vector-effect:non-scaling-stroke;pointer-events:none}
 .map-dot{stroke:#fff;stroke-width:1.1px;vector-effect:non-scaling-stroke;cursor:pointer}
